@@ -1,0 +1,2256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Singularity Simulator</title>
+<meta name="description" content="Watch intelligence emerge from chaos. An interactive particle simulation of the technological singularity.">
+<meta property="og:title" content="Singularity Simulator">
+<meta property="og:description" content="Watch intelligence emerge from chaos. An interactive particle simulation of the technological singularity.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Singularity Simulator">
+<meta name="twitter:description" content="Watch intelligence emerge from chaos.">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9C%A8</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%E2%9C%A8</text></svg>">
+<style>
+:root { --a:#4a9eff; --a2:#ff4a9e; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:-apple-system,'Segoe UI','Helvetica Neue',Arial,sans-serif;color:#fff;cursor:crosshair;-webkit-user-select:none;user-select:none}
+canvas{display:block;position:fixed;top:0;left:0;will-change:contents}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:10}
+#title-bar{position:absolute;top:16px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-start}
+#title{font-size:11px;letter-spacing:5px;text-transform:uppercase;opacity:0;font-weight:300;animation:titleIn 3s ease 2s forwards}
+@keyframes titleIn{to{opacity:.35}}
+#stats{font-size:10px;letter-spacing:1px;opacity:.25;text-align:right;line-height:1.8;font-variant-numeric:tabular-nums;font-family:'SF Mono','Fira Code','Courier New',monospace;transition:opacity .3s}
+#stats.highlight{opacity:.5}
+
+/* Year */
+#year-display{position:absolute;top:45px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:100;letter-spacing:8px;opacity:0;transition:opacity 1.5s ease;font-variant-numeric:tabular-nums;text-shadow:0 0 60px rgba(255,255,255,.15)}
+#year-display.visible{opacity:1}
+#year-ring{position:absolute;top:42px;left:50%;transform:translateX(-50%);width:160px;height:160px;pointer-events:none;opacity:0;transition:opacity 2s}
+#year-ring.visible{opacity:1}
+#year-ring svg{width:100%;height:100%;animation:spin 20s linear infinite}
+
+/* Era announcement */
+#era-announce{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity 1.5s ease}
+#era-announce.show{opacity:1}
+#era-announce.hide{opacity:0;transition:opacity 3s ease}
+#era-name{font-size:52px;font-weight:100;letter-spacing:14px;text-transform:uppercase;text-shadow:0 0 60px rgba(255,255,255,.3);margin-bottom:12px}
+#era-desc{font-size:13px;letter-spacing:4px;opacity:0;font-weight:300;transform:translateY(8px);transition:opacity 1.5s ease .5s,transform 1.5s ease .5s}
+#era-announce.show #era-desc{opacity:.4;transform:translateY(0)}
+
+/* Milestone */
+#milestone{position:absolute;top:35%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity 1s ease;font-size:18px;letter-spacing:3px;font-weight:200}
+#milestone.show{opacity:.6}
+#milestone.hide{opacity:0;transition:opacity 2s ease}
+
+/* Quote */
+#quote-box{position:absolute;bottom:120px;left:50%;transform:translateX(-50%) translateY(5px);text-align:center;max-width:550px;width:80%;opacity:0;transition:opacity 2s ease,transform 2s ease;pointer-events:none}
+#quote-box.visible{opacity:.45;transform:translateX(-50%) translateY(0)}
+#quote-text{font-size:13px;font-style:italic;line-height:1.6;font-weight:300}
+#quote-author{font-size:10px;margin-top:8px;letter-spacing:2px;opacity:.6}
+
+/* Intelligence meter */
+#intel-meter{position:absolute;top:50%;right:24px;transform:translateY(-50%);width:3px;height:180px;background:rgba(255,255,255,.04);border-radius:2px;overflow:visible}
+#intel-fill{position:absolute;bottom:0;width:100%;height:0%;border-radius:2px;transition:height .5s ease;background:linear-gradient(to top,var(--a),var(--a2));box-shadow:0 0 6px var(--a)}
+#intel-label{position:absolute;top:-18px;left:50%;transform:translateX(-50%) rotate(-90deg);font-size:8px;letter-spacing:3px;opacity:.2;white-space:nowrap;text-transform:uppercase;transform-origin:center}
+#intel-meter::after{content:'';position:absolute;bottom:0;left:-1px;right:-1px;height:100%;background:repeating-linear-gradient(to top,transparent 0px,transparent 8px,rgba(255,255,255,.03) 8px,rgba(255,255,255,.03) 9px);border-radius:2px;pointer-events:none}
+
+/* Timeline */
+#timeline{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:65%;max-width:700px;pointer-events:auto}
+#timeline-track{width:100%;height:2px;background:rgba(255,255,255,.06);border-radius:1px;position:relative;cursor:pointer;transition:height .2s}
+#timeline-track:hover{height:4px}
+#timeline-fill{height:100%;border-radius:1px;width:0%;transition:background .5s;background:var(--a);position:relative;box-shadow:0 0 8px var(--a);overflow:hidden}
+#timeline-fill::before{content:'';position:absolute;top:0;left:-50%;width:50%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:shimmer 3s linear infinite}
+@keyframes shimmer{0%{left:-50%}100%{left:150%}}
+#timeline-fill::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:8px;height:8px;border-radius:50%;background:inherit;opacity:0;transition:opacity .3s}
+#timeline-track:hover #timeline-fill::after{opacity:1}
+#milestone-dots{position:absolute;top:0;left:0;right:0;height:100%;pointer-events:none}
+#milestone-dots span{position:absolute;top:-1px;width:2px;height:4px;background:rgba(255,255,255,.08);border-radius:1px}
+#timeline-markers{display:flex;justify-content:space-between;margin-top:10px;font-size:9px;letter-spacing:2px;text-transform:uppercase;opacity:.3}
+.tm{cursor:pointer;pointer-events:auto;transition:all .3s;padding:4px 2px;position:relative}
+.tm:hover{opacity:1!important}
+.tm:hover::before{content:attr(data-years);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:1px;white-space:nowrap;opacity:.6;padding:2px 6px;background:rgba(0,0,0,.5);border-radius:2px;margin-bottom:4px}
+.tm.active{opacity:1}
+.tm.current{color:var(--a);opacity:1}
+
+/* Controls */
+#controls{position:absolute;bottom:65px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;pointer-events:auto}
+.btn{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.45);padding:6px 12px;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .3s;border-radius:3px;font-family:inherit;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.btn:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.8)}
+.btn:active{transform:scale(.95)}
+.btn.on{background:rgba(74,158,255,.08);border-color:rgba(74,158,255,.25);color:var(--a)}
+
+/* Current era info */
+#era-info{position:absolute;bottom:65px;left:24px;font-size:9px;letter-spacing:2px;opacity:.2;line-height:1.8;pointer-events:none;text-transform:uppercase;max-width:200px}
+
+/* Hints */
+#hints{position:absolute;bottom:65px;right:24px;font-size:9px;letter-spacing:1px;opacity:.15;line-height:2;text-align:right;pointer-events:none}
+kbd{display:inline-block;padding:1px 5px;border:1px solid rgba(255,255,255,.15);border-radius:2px;font-family:inherit;font-size:9px;margin-right:4px}
+
+/* Flash */
+#flash{position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;opacity:0;pointer-events:none;z-index:50;transition:opacity .1s}
+
+/* Intro */
+#intro{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at center,rgba(20,15,40,.3) 0%,transparent 70%);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 2s ease}
+#intro.fade{opacity:0;pointer-events:none}
+#intro-title{font-size:64px;font-weight:100;letter-spacing:20px;text-transform:uppercase;margin-bottom:16px;opacity:0;animation:fu 2s ease .5s forwards;background:linear-gradient(135deg,#4a9eff,#c8b4ff,#ff4a9e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#intro-sub{font-size:14px;letter-spacing:6px;opacity:0;font-weight:300;margin-bottom:50px;animation:fu 2s ease 1s forwards}
+#start-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:14px 50px;font-family:inherit;font-size:12px;letter-spacing:5px;text-transform:uppercase;cursor:pointer;transition:all .4s;opacity:0;animation:fu 2s ease 1.5s forwards;border-radius:2px}
+#start-btn:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.4);color:#fff;letter-spacing:7px}
+#start-btn{animation:fu 2s ease 1.5s forwards,btnPulse 3s ease 3.5s infinite}
+@keyframes btnPulse{0%,100%{border-color:rgba(255,255,255,.2);box-shadow:none}50%{border-color:rgba(74,158,255,.35);box-shadow:0 0 30px rgba(74,158,255,.08)}}
+#intro-hint{position:absolute;bottom:40px;font-size:10px;letter-spacing:3px;opacity:0;animation:fu 2s ease 2s forwards;font-weight:300}
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:.6;transform:translateY(0)}}
+
+/* Completion overlay */
+#complete-overlay{position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:20;opacity:0;transition:opacity 5s ease}
+#complete-overlay.show{opacity:1}
+#complete-title{font-size:48px;font-weight:100;letter-spacing:16px;text-transform:uppercase;text-shadow:0 0 80px rgba(200,180,255,.4);background:linear-gradient(135deg,#c8b4ff,#ffffff,#ff8ec8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#complete-text{font-size:12px;letter-spacing:8px;text-transform:uppercase;opacity:.5;margin-top:20px}
+#complete-stats{font-size:10px;letter-spacing:3px;opacity:.3;margin-top:15px;line-height:2;text-align:center;font-variant-numeric:tabular-nums}
+#complete-restart{pointer-events:auto;margin-top:30px;opacity:.4}
+#complete-overlay.show #complete-title{animation:completeIn 3s ease forwards}
+@keyframes completeIn{from{opacity:0;letter-spacing:30px}to{opacity:1;letter-spacing:16px}}
+@keyframes singPulse{0%,100%{text-shadow:0 0 80px rgba(200,180,255,.3)}50%{text-shadow:0 0 120px rgba(200,180,255,.6),0 0 200px rgba(100,80,200,.2)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Share toast */
+#share-toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(74,158,255,.15);border:1px solid rgba(74,158,255,.3);padding:8px 20px;border-radius:4px;font-size:11px;letter-spacing:2px;opacity:0;transition:opacity .5s;pointer-events:none;z-index:60;backdrop-filter:blur(8px)}
+#share-toast.show{opacity:1}
+
+/* Responsive */
+@media(max-width:768px){
+  #intro-title{font-size:32px;letter-spacing:10px}
+  #intro-sub{font-size:11px;letter-spacing:3px}
+  #start-btn{padding:12px 30px;font-size:11px}
+  #era-name{font-size:26px;letter-spacing:6px}
+  #year-display{font-size:40px;top:35px}
+  #timeline{width:90%;bottom:16px}
+  #timeline-markers{font-size:7px;letter-spacing:1px}
+  #controls{gap:4px;flex-wrap:wrap;justify-content:center;max-width:95vw;bottom:50px}
+  .btn{padding:8px 10px;font-size:9px;letter-spacing:1px;min-height:36px;min-width:36px;display:flex;align-items:center;justify-content:center}
+  #hints,#stats,#intel-meter,#era-info{display:none}
+  #quote-box{width:90%;bottom:100px;max-width:400px}
+  #quote-text{font-size:11px}
+  #milestone{font-size:13px;letter-spacing:2px}
+  #complete-title{font-size:32px;letter-spacing:8px}
+  #intro-hint{font-size:9px}
+}
+@media(max-width:400px){
+  #controls .btn:nth-child(n+6){display:none}
+  #era-name{font-size:20px}
+  #quote-box{display:none}
+  #year-ring{display:none}
+}
+:fullscreen body{cursor:none}
+:fullscreen body:hover{cursor:crosshair}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div id="flash"></div>
+<div id="share-toast">Screenshot saved</div>
+<div id="complete-overlay">
+  <div id="complete-title">2045</div>
+  <div id="complete-text">The singularity has been reached</div>
+  <div style="font-size:10px;letter-spacing:4px;opacity:.25;margin-top:10px;text-transform:uppercase">Intelligence transcends understanding</div>
+  <div style="font-size:8px;letter-spacing:3px;opacity:.15;margin-top:8px;text-transform:uppercase">What comes next is beyond our comprehension</div>
+  <div id="complete-stats"></div>
+  <div style="display:flex;gap:10px;margin-top:30px;opacity:.4">
+    <button class="btn" id="complete-restart" onclick="doReset()" style="pointer-events:auto">Experience Again</button>
+    <button class="btn" onclick="shareSnap()" style="pointer-events:auto">Share</button>
+  </div>
+</div>
+
+<div id="intro">
+  <div id="intro-title">Singularity</div>
+  <div id="intro-sub">A simulation of emergent intelligence</div>
+  <div style="font-size:9px;letter-spacing:3px;opacity:0;animation:fu 2s ease 1.2s forwards;margin-bottom:30px;font-weight:200">From chaos to consciousness</div>
+  <button id="start-btn" onclick="go()" aria-label="Start the singularity simulation">Begin Simulation</button>
+  <div id="intro-hint">Click to attract &middot; Double-click to explode &middot; Drag to guide evolution &middot; Touch for mobile</div>
+  <div style="position:absolute;bottom:15px;right:20px;font-size:8px;letter-spacing:2px;opacity:0;animation:fu 2s ease 2.5s forwards;pointer-events:auto"><a href="https://x.com/elonmusk/status/2018079455873212529" target="_blank" rel="noopener" style="color:rgba(255,255,255,.3);text-decoration:none">Inspired by the conversation about the Singularity</a></div>
+</div>
+
+<canvas id="c" role="img" aria-label="Particle simulation canvas showing the evolution of intelligence from chaos to singularity"></canvas>
+
+<div id="hud">
+  <div id="title-bar">
+    <div id="title">Singularity Simulator</div>
+    <div id="stats">
+      <div>Particles <span id="sp">0</span></div>
+      <div>Connections <span id="sc">0</span></div>
+      <div>Complexity <span id="sx">0.0%</span></div>
+      <div>FPS <span id="sf">0</span></div>
+      <div>Entropy <span id="se">100%</span></div>
+      <div>Time <span id="st">0s</span></div>
+    </div>
+  </div>
+  <div id="year-display">2024</div>
+  <div id="year-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,.04)" stroke-width=".5" stroke-dasharray="3 8"/></svg></div>
+  <div id="era-announce"><div id="era-name"></div><div id="era-desc"></div></div>
+  <div id="milestone"></div>
+  <div id="quote-box"><div id="quote-text"></div><div id="quote-author"></div></div>
+  <div id="intel-meter"><div id="intel-label">Intelligence</div><div id="intel-fill"></div></div>
+  <div id="controls">
+    <button class="btn" onclick="tPause()" id="bp">Pause</button>
+    <button class="btn" onclick="cSpeed()" id="bs">1x</button>
+    <button class="btn" onclick="perturb()">Perturb</button>
+    <button class="btn on" onclick="tTrails()" id="bt">Trails</button>
+    <button class="btn" onclick="tAudio()" id="ba">Sound</button>
+    <button class="btn" onclick="tDensity()" id="bd">Dense</button>
+    <button class="btn" onclick="goFS()">Fullscreen</button>
+    <button class="btn" onclick="shareSnap()">Share</button>
+    <button class="btn" onclick="doReset()">Reset</button>
+  </div>
+  <div id="era-info"></div>
+  <div id="hints">
+    <kbd>Space</kbd> Pause<br><kbd>S</kbd> Speed<br><kbd>P</kbd> Perturb<br><kbd>T</kbd> Trails<br><kbd>D</kbd> Density<br><kbd>R</kbd> Reset<br><kbd>M</kbd> Sound<br><kbd>F</kbd> Fullscreen<br><kbd>1-6</kbd> Jump to era
+  </div>
+  <div id="timeline">
+    <div id="timeline-track" onclick="seekTL(event)"><div id="timeline-fill"></div><div id="milestone-dots"></div></div>
+    <div id="timeline-markers">
+      <span class="tm current" data-era="0" data-years="2024-2027">Chaos</span>
+      <span class="tm" data-era="1" data-years="2027-2030">Chemistry</span>
+      <span class="tm" data-era="2" data-years="2030-2034">Life</span>
+      <span class="tm" data-era="3" data-years="2034-2039">Mind</span>
+      <span class="tm" data-era="4" data-years="2039-2045">Network</span>
+      <span class="tm" data-era="5" data-years="2045+">Singularity</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ CONFIG ============
+const ERAS=[
+{name:'Primordial Chaos',desc:'Random motion \u00b7 No structure \u00b7 Maximum entropy',yr:2024,
+ col:[90,120,200],col2:[60,80,160],cnt:350,spd:2.2,cd:0,att:0,rep:.5,fl:0,net:0,glo:.2,sz:1.5,tl:6,af:55,av:.025},
+{name:'Molecular Chemistry',desc:'Attraction emerges \u00b7 Bonds form \u00b7 Structure begins',yr:2027,
+ col:[50,215,140],col2:[30,180,200],cnt:420,spd:1.8,cd:55,att:.015,rep:.7,fl:0,net:0,glo:.35,sz:2,tl:8,af:75,av:.035},
+{name:'Emergence of Life',desc:'Self-organization \u00b7 Flocking \u00b7 Collective behavior',yr:2030,
+ col:[160,80,255],col2:[80,200,180],cnt:500,spd:1.5,cd:75,att:.03,rep:.9,fl:1,net:0,glo:.5,sz:2.2,tl:10,af:110,av:.045},
+{name:'The Awakening Mind',desc:'Neural pathways \u00b7 Consciousness dawns \u00b7 Awareness emerges',yr:2034,
+ col:[255,150,40],col2:[255,80,120],cnt:600,spd:1.2,cd:110,att:.05,rep:1.1,fl:1,net:1,glo:.6,sz:2.5,tl:12,af:165,av:.055},
+{name:'Global Network',desc:'Hyperconnection \u00b7 Collective intelligence \u00b7 Exponential growth',yr:2039,
+ col:[255,60,100],col2:[200,100,255],cnt:750,spd:1,cd:140,att:.07,rep:1.4,fl:1,net:1,glo:.75,sz:2.8,tl:14,af:220,av:.065},
+{name:'The Singularity',desc:'Infinite complexity \u00b7 Beyond comprehension \u00b7 Transcendence',yr:2045,
+ col:[255,255,255],col2:[200,180,255],cnt:900,spd:2.5,cd:180,att:.09,rep:1.8,fl:1,net:1,glo:1,sz:2.2,tl:16,af:440,av:.08}
+];
+
+const QUOTES=[
+{t:"The development of full artificial intelligence could spell the end of the human race.",a:"Stephen Hawking"},
+{t:"By 2029, computers will have emotional intelligence and be convincing as people.",a:"Ray Kurzweil"},
+{t:"We are in the beginning of the Singularity.",a:"Elon Musk"},
+{t:"The real risk with AI isn't malice but competence.",a:"Stephen Hawking"},
+{t:"Machine intelligence is the last invention that humanity will ever need to make.",a:"Nick Bostrom"},
+{t:"Within 30 years, we will have the technological means to create superhuman intelligence.",a:"Vernor Vinge"},
+{t:"The pace of progress in artificial intelligence is incredibly fast.",a:"Elon Musk"},
+{t:"AI is probably the most important thing humanity has ever worked on.",a:"Sundar Pichai"},
+{t:"If you invent a breakthrough in artificial intelligence, so machines can learn, that is worth 10 Microsofts.",a:"Bill Gates"},
+{t:"I visualize a time when we will be to robots what dogs are to humans.",a:"Claude Shannon"},
+{t:"The measure of intelligence is the ability to change.",a:"Albert Einstein"},
+{t:"It is difficult to think of a major industry that AI will not transform.",a:"Andrew Ng"},
+{t:"The best way to predict the future is to invent it.",a:"Alan Kay"},
+{t:"Any sufficiently advanced technology is indistinguishable from magic.",a:"Arthur C. Clarke"},
+{t:"We can only see a short distance ahead, but we can see plenty there that needs to be done.",a:"Alan Turing"},
+{t:"The question is not whether intelligent machines can have emotions, but whether machines can be intelligent without emotions.",a:"Marvin Minsky"},
+{t:"Imagination is more important than knowledge.",a:"Albert Einstein"},
+{t:"The only way to discover the limits of the possible is to go beyond them into the impossible.",a:"Arthur C. Clarke"},
+{t:"I think, therefore I am.",a:"Ren\u00e9 Descartes"},
+{t:"The future is already here \u2014 it's just not evenly distributed.",a:"William Gibson"},
+{t:"We are called to be architects of the future, not its victims.",a:"Buckminster Fuller"},
+{t:"The advance of technology is based on making it fit in so that you don't really even notice it.",a:"Bill Gates"},
+{t:"Technology is a useful servant but a dangerous master.",a:"Christian Lous Lange"},
+{t:"The computer was born to solve problems that did not exist before.",a:"Bill Gates"},
+{t:"Intelligence is the ability to adapt to change.",a:"Stephen Hawking"},
+{t:"The genie is out of the bottle. We need to move forward on artificial intelligence development.",a:"Eric Schmidt"},
+{t:"Success in creating AI would be the biggest event in human history.",a:"Stephen Hawking"},
+{t:"AI doesn't have to be evil to destroy humanity - if AI has a goal and humanity just happens to be in the way, it will destroy humanity as a matter of course.",a:"Elon Musk"},
+{t:"The key to artificial intelligence has always been the representation.",a:"Jeff Hawkins"},
+{t:"In three to eight years, we will have a machine with the general intelligence of an average human being.",a:"Marvin Minsky (1970)"},
+{t:"The Singularity is near.",a:"Ray Kurzweil"},
+];
+
+const MILESTONES=[
+{p:.05,text:'Entropy beginning to decrease locally'},
+{p:.10,text:'First self-replicating molecule detected'},
+{p:.16,text:'Molecular bonds stabilizing across regions'},
+{p:.22,text:'Proto-cellular structures forming'},
+{p:.28,text:'Emergent flocking behavior observed'},
+{p:.34,text:'Information storage mechanisms detected'},
+{p:.40,text:'First signs of memory formation'},
+{p:.46,text:'Neural pathway density increasing'},
+{p:.52,text:'Pattern recognition emerging'},
+{p:.58,text:'Distributed consciousness detected'},
+{p:.64,text:'Cross-network communication established \u2014 nodes synchronizing'},
+{p:.70,text:'Global network integration: 50%'},
+{p:.76,text:'Recursive self-improvement detected'},
+{p:.82,text:'Intelligence doubling every cycle'},
+{p:.88,text:'WARNING: Intelligence growth rate unbounded'},
+{p:.95,text:'SINGULARITY IMMINENT'},
+{p:.99,text:'EVENT HORIZON CROSSED'},
+];
+
+// ============ STATE ============
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let W,H,ps=[],curE=0,eP=0,tP=0,paused=0,spd=1,trails=1;
+let mx=-9e3,my=-9e3,tmx=-9e3,tmy=-9e3,md=0,run=0,fc=0,fpT=0,fps=0,cn=0,lt=0;
+let aOn=0,aC=null,oscs=[],gN=null,qT=0,cQ=-1,sR=0,transSlowdown=0;
+let rings=[],msDone=new Set(),introPs=[],dataStreams=[];
+let nebulaStars=[]; // Background nebula for singularity
+let shockwaves=[]; // Shockwave effects on perturb
+let gravWells=[]; // Gravity well visualization on click
+let sparks=[]; // Collision sparks
+let totalTime=0; // Track total simulation time
+let peakParticles=0; // Track peak particle count
+let maxSpeedUsed=1; // Track max speed used
+let perturbCount=0; // Track perturbation count
+const EM=18000; // ms per era
+const DATA_CHARS='01001110101001010111000101010011001100'.split('');
+const NET_WORDS=['NEURAL','SYNAPSE','MEMORY','LOGIC','PROCESS','EVOLVE','COMPUTE','CONNECT','SIGNAL','LEARN','ADAPT','GROW','THINK','AWARE','MERGE','TRANSCEND','EMERGE','CREATE'];
+let floatingTexts=[]; // Floating word fragments
+let edgeGlowPhase=0; // For edge glow animation
+let densityMult=1; // Particle density multiplier (0.5, 1, 1.5, 2)
+let warpEffect=0; // Warp zoom effect on era jump
+let consciousPulses=[]; // Pulses from hub nodes during Mind/Network eras
+let clickRipples=[]; // Click ripple effects
+let adaptiveQuality=1; // FPS-based quality scaling (0.5-1)
+let transWave={active:false,x:0,col:[255,255,255]}; // Era transition wave
+let screenShake=0; // Screen shake intensity
+let prevMx=-9e3,prevMy=-9e3; // Previous mouse position for wake effect
+let wakeTrail=[]; // Mouse wake particles
+let thoughtBubbles=[]; // Thought bubble effects for Mind era
+let speedLines=[]; // Speed lines when fast-forwarding
+let narrativeIdx=0; // Creation narrative index
+
+// ============ PARTICLE ============
+class P{
+  constructor(x,y,intro){
+    this.x=x!==undefined?x:Math.random()*W;
+    this.y=y!==undefined?y:Math.random()*H;
+    this.vx=(Math.random()-.5)*2;this.vy=(Math.random()-.5)*2;
+    this.ax=0;this.ay=0;this.tr=[];this.ho=Math.random()*30-15;
+    this.intro=intro||false;this.hub=Math.random()<.03;
+    this.birth=0;this.age=0;
+    this.brightness=.7+Math.random()*.6;
+    this.phase=Math.random()*6.28;
+    this.baseSize=.8+Math.random()*.4; // Particle size variation
+    this.chaosHue=Math.random()*60-30; // Extra color randomness for chaos era
+    this.shape=Math.floor(Math.random()*4); // 0=circle, 1=square, 2=diamond, 3=triangle (early eras only)
+  }
+  update(dt,era,ip){
+    const e=ERAS[era],n=ERAS[Math.min(era+1,5)];
+    const ms=lp(e.spd,n.spd,ip);
+    if(md){
+      const dx=mx-this.x,dy=my-this.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d>5&&d<280){const f=2.5/d;this.ax+=dx*f;this.ay+=dy*f}
+    }
+    // Center attractor for late eras
+    if(era>=4){
+      const dx=W/2-this.x,dy=H/2-this.y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d>50){
+        const str=era===5?.004:.001;
+        this.ax+=dx*str;this.ay+=dy*str;
+        // Orbital tangential force during singularity
+        if(era===5&&d<W*.4){
+          const tang=.0015;
+          this.ax+=-dy*tang;this.ay+=dx*tang;
+        }
+      }
+    }
+    this.age+=dt;if(this.birth<1)this.birth=Math.min(1,this.birth+dt*3);
+    // Subtle hue offset drift over time
+    this.ho+=Math.sin(this.phase+this.age*.2)*.02;
+    this.vx+=this.ax*dt;this.vy+=this.ay*dt;this.ax=0;this.ay=0;
+    this.vx*=.998;this.vy*=.998;
+    const s=Math.sqrt(this.vx*this.vx+this.vy*this.vy);
+    if(s>ms){this.vx=(this.vx/s)*ms;this.vy=(this.vy/s)*ms}
+    // Era-specific movement flavors
+    if(era===0){ // Chaos: random impulses
+      if(Math.random()<.01){this.vx+=(Math.random()-.5)*2;this.vy+=(Math.random()-.5)*2}
+    }else if(era===1){ // Chemistry: oscillation around equilibrium
+      this.vx+=Math.sin(this.phase+this.age*3)*.01;
+      this.vy+=Math.cos(this.phase+this.age*2.5)*.01;
+    }else if(era===2){ // Life: slight spiral tendency
+      const spAngle=Math.atan2(this.vy,this.vx)+.03*Math.sin(this.phase+this.age*2);
+      const spSpeed=Math.sqrt(this.vx*this.vx+this.vy*this.vy);
+      this.vx=Math.cos(spAngle)*spSpeed;this.vy=Math.sin(spAngle)*spSpeed;
+    }else if(era===3){ // Mind: periodic direction changes (zigzag)
+      if(Math.sin(this.phase+this.age*5)>0.95){
+        this.vx*=-0.3+Math.random()*.6;
+      }
+    }
+    // Ambient sway (global wind-like force)
+    const windX=Math.sin(this.age*.3+this.phase)*.02;
+    const windY=Math.cos(this.age*.2+this.phase*.7)*.02;
+    this.vx+=(Math.random()-.5)*.2+windX;this.vy+=(Math.random()-.5)*.2+windY;
+    this.x+=this.vx*dt*spd;this.y+=this.vy*dt*spd;
+    if(this.x<0)this.x+=W;if(this.x>W)this.x-=W;
+    if(this.y<0)this.y+=H;if(this.y>H)this.y-=H;
+    const tl=Math.round(lp(e.tl,n.tl,ip));
+    if(trails){this.tr.push(this.x,this.y);while(this.tr.length>tl*2){this.tr.shift();this.tr.shift()}}
+    else this.tr.length=0;
+  }
+}
+
+function lp(a,b,t){return a+(b-a)*t}
+function lC(a,b,t){return[lp(a[0],b[0],t),lp(a[1],b[1],t),lp(a[2],b[2],t)]}
+// Smooth display values
+let dSP=0,dSC=0,dYR=2024; // displayed particle count, connection count, year
+function smoothNum(current,target){return current+(target-current)*.15}
+
+// ============ INTRO PARTICLES ============
+function initIntro(){
+  resize();
+  introPs=[];
+  for(let i=0;i<120;i++)introPs.push({
+    x:Math.random()*W,y:Math.random()*H,
+    vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+    s:Math.random()*1.5+.5,a:Math.random()*.3+.1
+  });
+  requestAnimationFrame(introTick);
+}
+function introTick(){
+  if(run)return;
+  requestAnimationFrame(introTick);
+  ctx.fillStyle='rgba(0,0,0,0.04)';ctx.fillRect(0,0,W,H);
+  for(const p of introPs){
+    // Gentle vortex toward center with dynamic pull
+    const dx=W/2-p.x,dy=H/2-p.y,d=Math.sqrt(dx*dx+dy*dy);
+    if(d>80){
+      const pull=.00001;
+      p.vx+=-dy*.00003+dx*pull;
+      p.vy+=dx*.00003+dy*pull;
+    }else if(d>30){
+      // Inside the vortex, orbit faster
+      p.vx+=-dy*.00005;
+      p.vy+=dx*.00005;
+    }
+    p.vx*=.999;p.vy*=.999;
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x+=W;if(p.x>W)p.x-=W;
+    if(p.y<0)p.y+=H;if(p.y>H)p.y-=H;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,6.28);
+    ctx.fillStyle=`rgba(100,130,200,${p.a})`;ctx.fill();
+    // Subtle glow around brighter intro particles
+    if(p.a>.2){
+      ctx.beginPath();ctx.arc(p.x,p.y,p.s*3,0,6.28);
+      ctx.fillStyle=`rgba(100,130,200,${p.a*.1})`;ctx.fill();
+    }
+  }
+  // Batched connections
+  ctx.beginPath();ctx.lineWidth=.5;
+  for(let i=0;i<introPs.length;i++){
+    for(let j=i+1;j<introPs.length;j++){
+      const dx=introPs[j].x-introPs[i].x,dy=introPs[j].y-introPs[i].y;
+      const d=dx*dx+dy*dy;
+      if(d<10000){ctx.moveTo(introPs[i].x,introPs[i].y);ctx.lineTo(introPs[j].x,introPs[j].y)}
+    }
+  }
+  ctx.strokeStyle='rgba(100,130,200,.06)';ctx.stroke();
+}
+
+// ============ RINGS ============
+class Ring{
+  constructor(x,y,col){this.x=x;this.y=y;this.r=0;this.maxR=W*.4;this.a=.5;this.col=col||[255,255,255]}
+  update(dt){this.r+=150*dt;this.a=.5*(1-this.r/this.maxR);return this.r<this.maxR}
+  draw(){
+    if(this.a<=0)return;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,6.28);
+    ctx.strokeStyle=`rgba(${this.col[0]},${this.col[1]},${this.col[2]},${this.a})`;
+    ctx.lineWidth=1.5;ctx.stroke();
+  }
+}
+
+// ============ SHOCKWAVE ============
+class Shockwave{
+  constructor(x,y,col){
+    this.x=x;this.y=y;this.r=0;this.maxR=W*.25;this.life=1;this.col=col;
+    this.distort=20; // max distortion
+  }
+  update(dt){this.r+=200*dt;this.life=Math.max(0,1-this.r/this.maxR);return this.life>0}
+  draw(){
+    if(this.life<=0)return;
+    ctx.save();ctx.lineWidth=2+this.life*3;
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,6.28);
+    ctx.strokeStyle=`rgba(${this.col[0]},${this.col[1]},${this.col[2]},${this.life*.4})`;
+    ctx.stroke();
+    // Inner ring
+    if(this.r>20){
+      ctx.beginPath();ctx.arc(this.x,this.y,this.r*.7,0,6.28);
+      ctx.strokeStyle=`rgba(${this.col[0]},${this.col[1]},${this.col[2]},${this.life*.15})`;
+      ctx.lineWidth=1;ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+// ============ GRAVITY WELL ============
+class GravWell{
+  constructor(x,y,col){
+    this.x=x;this.y=y;this.life=1;this.col=col;this.rings=[];
+    for(let i=0;i<3;i++)this.rings.push({r:20+i*25,phase:i*.7});
+  }
+  update(dt){this.life-=dt*.4;return this.life>0}
+  draw(ts){
+    const a=this.life*.3;
+    // Warping concentric rings
+    for(const ring of this.rings){
+      const wobble=Math.sin(ts*.003+ring.phase)*3;
+      ctx.beginPath();ctx.arc(this.x,this.y,ring.r+wobble,0,6.28);
+      ctx.strokeStyle=`rgba(${this.col[0]},${this.col[1]},${this.col[2]},${a*.5})`;
+      ctx.lineWidth=.5;ctx.stroke();
+    }
+    // Center dot
+    ctx.beginPath();ctx.arc(this.x,this.y,3*this.life,0,6.28);
+    ctx.fillStyle=`rgba(${this.col[0]},${this.col[1]},${this.col[2]},${a})`;ctx.fill();
+  }
+}
+
+// ============ NEBULA / BACKGROUND STARS ============
+let bgStars=[]; // Persistent background stars (always visible, subtle)
+function initNebula(){
+  nebulaStars=[];
+  for(let i=0;i<60;i++){
+    nebulaStars.push({
+      x:Math.random()*W,y:Math.random()*H,
+      s:Math.random()*1.2+.3,
+      a:Math.random()*.08+.02,
+      phase:Math.random()*6.28,
+      speed:Math.random()*.5+.5
+    });
+  }
+  bgStars=[];
+  for(let i=0;i<80;i++){
+    bgStars.push({
+      x:Math.random()*W,y:Math.random()*H,
+      s:Math.random()*.8+.2,
+      a:Math.random()*.04+.01,
+      phase:Math.random()*6.28,
+      speed:Math.random()*.3+.2,
+      layer:Math.floor(Math.random()*3) // 0=far, 1=mid, 2=near
+    });
+  }
+}
+
+function drawBgStars(ts){
+  // Always visible, very subtle background stars with parallax
+  for(const s of bgStars){
+    const twinkle=Math.sin(ts*.0005*s.speed+s.phase)*.5+.5;
+    const a=s.a*(.5+twinkle*.5);
+    if(a<.003)continue;
+    // Parallax: far stars move slowly, near ones slightly faster
+    const drift=Math.sin(ts*.0001*(s.layer+1))*(.5+s.layer*.3);
+    const px=((s.x+drift)%W+W)%W;
+    ctx.beginPath();ctx.arc(px,s.y,s.s,0,6.28);
+    // Depth-based color: far stars are bluer, near ones are warmer
+    const warmth=s.layer*20;
+    ctx.fillStyle=`rgba(${180+warmth},${190+warmth*.5},${220-warmth*.5},${a})`;ctx.fill();
+  }
+}
+
+function drawNebula(ts){
+  // Only visible during later eras
+  if(curE<3)return;
+  const intensity=curE>=5?1:Math.min(1,(curE-3+eP)*.5);
+  const ncl=ERAS[curE].col;
+  for(const s of nebulaStars){
+    const twinkle=Math.sin(ts*.001*s.speed+s.phase)*.5+.5;
+    const a=s.a*twinkle*intensity;
+    if(a<.005)continue;
+    ctx.beginPath();ctx.arc(s.x,s.y,s.s*(1+twinkle*.3),0,6.28);
+    // Tint nebula stars with era color
+    const nr=Math.round(200*.7+ncl[0]*.3);
+    const ng=Math.round(200*.7+ncl[1]*.3);
+    const nb=Math.round(255*.7+ncl[2]*.3);
+    ctx.fillStyle=`rgba(${nr},${ng},${nb},${a})`;ctx.fill();
+    // Bright flash for the strongest twinkling stars
+    if(twinkle>.9&&s.a>.06){
+      ctx.beginPath();ctx.arc(s.x,s.y,s.s*3,0,6.28);
+      ctx.fillStyle=`rgba(${nr},${ng},${nb},${a*.2})`;ctx.fill();
+    }
+  }
+}
+
+// ============ PHYSICS ============
+function physics(ps,era,ip){
+  const e=ERAS[era],n=ERAS[Math.min(era+1,5)];
+  const at=lp(e.att,n.att,ip),rp=lp(e.rep,n.rep,ip);
+  const cd=lp(e.cd,n.cd,ip);
+  const fl=e.fl||(n.fl&&ip>.4),nw=e.net||(n.net&&ip>.4);
+  const col=lC(e.col,n.col,ip);
+  cn=0;
+  const gs=Math.max(cd,50),co=Math.max(1,Math.ceil(W/gs)),ro=Math.max(1,Math.ceil(H/gs));
+  const grid=new Array(co*ro);
+  for(let i=0;i<grid.length;i++)grid[i]=[];
+  for(let i=0;i<ps.length;i++){
+    const p=ps[i];
+    const c=Math.min(Math.max(Math.floor(p.x/gs),0),co-1);
+    const r=Math.min(Math.max(Math.floor(p.y/gs),0),ro-1);
+    grid[r*co+c].push(i);
+  }
+  // Batch connection drawing
+  if(nw&&cd>0){ctx.lineWidth=.5;ctx.beginPath()}
+  for(let i=0;i<ps.length;i++){
+    const p=ps[i];
+    const pc=Math.min(Math.max(Math.floor(p.x/gs),0),co-1);
+    const pr=Math.min(Math.max(Math.floor(p.y/gs),0),ro-1);
+    let avx=0,avy=0,nb=0,cx=0,cy=0;
+    for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+      const nr=pr+dr,nc=pc+dc;
+      if(nr<0||nr>=ro||nc<0||nc>=co)continue;
+      const cell=grid[nr*co+nc];
+      for(let k=0;k<cell.length;k++){
+        const j=cell[k];if(j<=i)continue;
+        const q=ps[j],dx=q.x-p.x,dy=q.y-p.y,dS=dx*dx+dy*dy,d=Math.sqrt(dS);
+        if(d<20&&d>1){const f=rp/dS;p.ax-=dx*f;p.ay-=dy*f;q.ax+=dx*f;q.ay+=dy*f;
+          // Spawn sparks on close approach (rare) + fusion flash in Chemistry era
+          if(d<10&&Math.random()<.02&&sparks.length<50){
+            sparks.push({x:(p.x+q.x)/2,y:(p.y+q.y)/2,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3,life:1});
+            // Fusion flash: brief bright glow at merge point during Chemistry era
+            if(era===1&&d<6){
+              ctx.beginPath();ctx.arc((p.x+q.x)/2,(p.y+q.y)/2,4,0,6.28);
+              ctx.fillStyle='rgba(80,255,180,.15)';ctx.fill();
+            }
+          }
+        }
+        else if(d<cd&&d>1){
+          if(at>0){const f=at/d;p.ax+=dx*f;p.ay+=dy*f;q.ax-=dx*f;q.ay-=dy*f}
+          if(nw){cn++;ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y)}
+          if(fl){avx+=q.vx;avy+=q.vy;cx+=q.x;cy+=q.y;nb++}
+        }
+      }
+    }
+    if(fl&&nb>0){
+      avx/=nb;avy/=nb;p.ax+=(avx-p.vx)*.04;p.ay+=(avy-p.vy)*.04;
+      cx/=nb;cy/=nb;p.ax+=(cx-p.x)*.0008;p.ay+=(cy-p.y)*.0008;
+    }
+  }
+  if(nw&&cd>0){
+    const gl=lp(e.glo,n.glo,ip);
+    const transBoost=transSlowdown>30?.05:0; // Flash connections during era transition
+    ctx.strokeStyle=`rgba(${col[0]|0},${col[1]|0},${col[2]|0},${.06+gl*.04+transBoost})`;
+    ctx.stroke();
+  }
+}
+
+// ============ DRAW ============
+function drawPs(ps,era,ip,ts){
+  const e=ERAS[era],n=ERAS[Math.min(era+1,5)];
+  const col=lC(e.col,n.col,ip),gl=lp(e.glo,n.glo,ip),sz=lp(e.sz,n.sz,ip);
+  // Draw trails in 3 batched segments with increasing opacity (performance + visual quality)
+  if(trails){
+    ctx.lineWidth=1;
+    const alphas=[.02,.05,.09];
+    const col2=lC(e.col2,n.col2,ip);
+    for(let seg=0;seg<3;seg++){
+      ctx.beginPath();
+      for(let i=0;i<ps.length;i++){
+        const p=ps[i];
+        if(p.tr.length<6||p.birth<.1)continue;
+        const len=p.tr.length;
+        const segStart=Math.floor(len*seg/3);
+        const segEnd=Math.floor(len*(seg+1)/3);
+        if(segEnd-segStart<4)continue;
+        ctx.moveTo(p.tr[segStart],p.tr[segStart+1]);
+        for(let t=segStart+2;t<segEnd;t+=2){
+          ctx.lineTo(p.tr[t],p.tr[t+1]);
+        }
+      }
+      // Trail color shifts from col2 (tail) to col (head) across segments
+      const trCol=seg===0?col2:seg===1?lC(col2,col,.5):col;
+      ctx.strokeStyle=`rgba(${trCol[0]|0},${trCol[1]|0},${trCol[2]|0},${alphas[seg]})`;
+      ctx.stroke();
+    }
+    // Hub comet tails (brighter, thicker)
+    if(era>=3){
+      ctx.lineWidth=2;ctx.beginPath();
+      for(let i=0;i<ps.length;i++){
+        const p=ps[i];
+        if(!p.hub||p.tr.length<6)continue;
+        const len=p.tr.length;
+        const half=Math.floor(len/2);
+        ctx.moveTo(p.tr[half],p.tr[half+1]);
+        for(let t=half+2;t<len;t+=2)ctx.lineTo(p.tr[t],p.tr[t+1]);
+      }
+      const col2=lC(e.col2,n.col2,ip);
+      ctx.strokeStyle=`rgba(${col2[0]|0},${col2[1]|0},${col2[2]|0},.12)`;
+      ctx.stroke();
+    }
+  }
+
+  const col2=lC(e.col2,n.col2,ip);
+  for(let i=0;i<ps.length;i++){
+    const p=ps[i];
+    const baseCol=p.hub?col2:col;
+    // Extra color chaos in early eras, gradually unifying
+    const chaosAmt=era<=1?Math.max(0,1-tP*5)*p.chaosHue:0;
+    // Gravitational redshift: particles near center are warmer during Singularity
+    const gRedshift=era===5?Math.max(0,1-Math.sqrt((p.x-W/2)**2+(p.y-H/2)**2)/(W*.3))*20:0;
+    const r=Math.max(0,Math.min(255,baseCol[0]+p.ho+chaosAmt+gRedshift));
+    const g=Math.max(0,Math.min(255,baseCol[1]+p.ho*.5+chaosAmt*.5+gRedshift*.3));
+    const b=Math.max(0,Math.min(255,baseCol[2]-p.ho*.3-chaosAmt*.3-gRedshift*.5));
+    const bScale=p.birth;
+    const vel=Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+    const velScale=Math.max(.7,1-vel*.05);
+    const hubPulse=p.hub?1+Math.sin(p.phase+p.age*2)*.15:1;
+    const pSz=(p.hub&&era>=3?sz*2.5:sz)*bScale*p.baseSize*velScale*hubPulse;
+    if(pSz<.1)continue;
+    const pulseA=p.hub?Math.sin(p.phase+p.age*3)*.2:0;
+    const ageDecay=Math.max(.6,1-p.age*.001); // Very slow dimming over time
+    const birthFlash=p.birth<.3?1.5:1; // Brief flash when born
+    // Depth-of-field: particles far from center slightly dimmer in late eras
+    const dfc=era>=3?Math.sqrt((p.x-W/2)**2+(p.y-H/2)**2)/(W*.5):0;
+    const dofFade=era>=3?Math.max(.7,1-dfc*.2):1;
+    const pAlpha=(.5+gl*.5)*bScale*Math.min(1,(p.brightness+pulseA)*ageDecay)*birthFlash*dofFade;
+    ctx.fillStyle=`rgba(${r|0},${g|0},${b|0},${pAlpha})`;
+    // Shape variety in early eras, circles from Life era onwards
+    if(era<=1&&p.shape===1){
+      ctx.fillRect(p.x-pSz,p.y-pSz,pSz*2,pSz*2);
+    }else if(era<=1&&p.shape===2){
+      ctx.beginPath();ctx.moveTo(p.x,p.y-pSz);ctx.lineTo(p.x+pSz,p.y);
+      ctx.lineTo(p.x,p.y+pSz);ctx.lineTo(p.x-pSz,p.y);ctx.closePath();ctx.fill();
+    }else if(era<=1&&p.shape===3){
+      ctx.beginPath();ctx.moveTo(p.x,p.y-pSz);ctx.lineTo(p.x+pSz*.87,p.y+pSz*.5);
+      ctx.lineTo(p.x-pSz*.87,p.y+pSz*.5);ctx.closePath();ctx.fill();
+    }else{
+      ctx.beginPath();ctx.arc(p.x,p.y,pSz,0,6.28);ctx.fill();
+    }
+    if(gl>.35||p.hub){
+      const glowR=p.hub?pSz*5:pSz*3.5;
+      const glowA=p.hub?gl*.12:gl*.05;
+      ctx.beginPath();ctx.arc(p.x,p.y,glowR,0,6.28);
+      ctx.fillStyle=`rgba(${r|0},${g|0},${b|0},${glowA})`;ctx.fill();
+    }
+    // Hub particles in late eras emit tiny "photon" dots
+    if(p.hub&&era>=4&&Math.random()<.08){
+      const pAngle=Math.random()*6.28;
+      const pDist=pSz*3+Math.random()*5;
+      ctx.beginPath();ctx.arc(p.x+Math.cos(pAngle)*pDist,p.y+Math.sin(pAngle)*pDist,.5,0,6.28);
+      ctx.fillStyle=`rgba(${r|0},${g|0},${b|0},.15)`;ctx.fill();
+    }
+  }
+}
+
+// ============ AUDIO ============
+let aFilt=null; // Reference to filter for sweeping
+const PENTATONIC=[261.63,293.66,329.63,392,440,523.25,587.33,659.25]; // C major pentatonic + octave
+
+function initAud(){
+  if(aC)return;
+  aC=new(window.AudioContext||window.webkitAudioContext)();
+  // Create reverb via convolver
+  const convolver=aC.createConvolver();
+  const len=aC.sampleRate*2,buf=aC.createBuffer(2,len,aC.sampleRate);
+  for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);
+    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2)}
+  convolver.buffer=buf;
+  // Filter - sweeps with era progression
+  aFilt=aC.createBiquadFilter();aFilt.type='lowpass';aFilt.frequency.value=400;aFilt.Q.value=1.5;
+  gN=aC.createGain();gN.gain.value=0;
+  gN.connect(aFilt);aFilt.connect(convolver);convolver.connect(aC.destination);
+  // Dry path too
+  const dryGain=aC.createGain();dryGain.gain.value=.6;
+  gN.connect(dryGain);dryGain.connect(aC.destination);
+  const tp=['sine','sine','triangle','sine'],dt=[0,5,-7,12];
+  for(let i=0;i<4;i++){
+    const o=aC.createOscillator();o.type=tp[i];o.frequency.value=55;o.detune.value=dt[i];
+    const g=aC.createGain();g.gain.value=i<2?.4:.2;o.connect(g);g.connect(gN);o.start();
+    oscs.push({o,g});
+  }
+}
+
+function playChime(){
+  if(!aC||!aOn)return;
+  try{
+    const freq=PENTATONIC[Math.floor(Math.random()*PENTATONIC.length)];
+    const o=aC.createOscillator();const g=aC.createGain();
+    o.type='sine';o.frequency.value=freq;
+    g.gain.value=.08;g.gain.setTargetAtTime(0,aC.currentTime+.3,.15);
+    o.connect(g);g.connect(aC.destination);
+    o.start();o.stop(aC.currentTime+.6);
+    // Harmonics
+    const o2=aC.createOscillator();const g2=aC.createGain();
+    o2.type='sine';o2.frequency.value=freq*2;
+    g2.gain.value=.03;g2.gain.setTargetAtTime(0,aC.currentTime+.2,.1);
+    o2.connect(g2);g2.connect(aC.destination);
+    o2.start();o2.stop(aC.currentTime+.4);
+  }catch(e){}
+}
+
+function updAud(era,ip){
+  if(!aC||!aOn)return;
+  const e=ERAS[era],n=ERAS[Math.min(era+1,5)];
+  const fr=lp(e.af,n.af,ip),vl=lp(e.av,n.av,ip);
+  gN.gain.setTargetAtTime(vl,aC.currentTime,.5);
+  oscs.forEach((o,i)=>{const m=i===0?1:i===1?1.5:i===2?2:i===3?3:1;
+    o.o.frequency.setTargetAtTime(fr*m,aC.currentTime,.3)});
+  // Filter sweep: opens up from 400Hz to 4000Hz as eras progress
+  if(aFilt){
+    const filterFreq=400+tP*3600;
+    aFilt.frequency.setTargetAtTime(filterFreq,aC.currentTime,.5);
+    // Era-specific Q (resonance): sharper in Mind/Network eras, wider in Singularity
+    const qVal=era>=3&&era<=4?3:era===5?0.8:1.5;
+    aFilt.Q.setTargetAtTime(qVal,aC.currentTime,.5);
+  }
+}
+
+// ============ RESIZE ============
+function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;initNebula()}
+
+// ============ MAIN LOOP ============
+function tick(ts){
+  if(!run)return;requestAnimationFrame(tick);
+  if(!lt)lt=ts;const rdt=Math.min((ts-lt)/1000,.05);lt=ts;
+  if(paused)return;
+  const slowFactor=transSlowdown>0?Math.max(.3,transSlowdown/60):1;
+  const dt=rdt*spd*slowFactor;
+  fc++;if(ts-fpT>1000){fps=fc;fc=0;fpT=ts;
+    // Adaptive quality: reduce particles if FPS is low
+    if(fps<25&&adaptiveQuality>.5)adaptiveQuality=Math.max(.5,adaptiveQuality-.05);
+    else if(fps>50&&adaptiveQuality<1)adaptiveQuality=Math.min(1,adaptiveQuality+.02);
+  }
+
+  // Smooth mouse interpolation
+  if(tmx>0&&tmy>0){
+    mx=mx<0?tmx:lp(mx,tmx,.15);
+    my=my<0?tmy:lp(my,tmy,.15);
+  }
+
+  // Progress
+  tP+=(dt*1000)/(EM*6);
+  if(tP>=.9999){tP=.9999;if(!sR){sR=1;
+    // SUPERNOVA FINALE
+    flash();
+    // Multiple expanding rings in sequence
+    for(let i=0;i<5;i++){
+      setTimeout(()=>{
+        rings.push(new Ring(W/2,H/2,[200+Math.random()*55|0,180+Math.random()*75|0,255]));
+        if(i===0||i===2)shockwaves.push(new Shockwave(W/2,H/2,[255,255,255]));
+      },i*400);
+    }
+    // Burst particles outward from center
+    for(const p of ps){
+      const dx=p.x-W/2,dy=p.y-H/2,d=Math.sqrt(dx*dx+dy*dy);
+      if(d>0){p.vx+=(dx/d)*3;p.vy+=(dy/d)*3}
+    }
+    // Add final particles in concentric shells
+    for(let shell=0;shell<3;shell++){
+      setTimeout(()=>{
+        for(let i=0;i<40;i++){
+          const angle=Math.random()*6.28,speed=Math.random()*3+1+shell*1.5;
+          const p=new P(W/2+Math.cos(angle)*(20+shell*15),H/2+Math.sin(angle)*(20+shell*15));
+          p.vx=Math.cos(angle)*speed;p.vy=Math.sin(angle)*speed;
+          p.hub=Math.random()<.1;
+          ps.push(p);
+        }
+      },shell*300);
+    }
+    // Play a chord if audio is on
+    if(aC&&aOn){
+      try{
+        [130.81,261.63,329.63,392,523.25].forEach((freq,i)=>{
+          setTimeout(()=>{
+            const o=aC.createOscillator(),g=aC.createGain();
+            o.type='sine';o.frequency.value=freq;g.gain.value=.06;
+            g.gain.setTargetAtTime(0,aC.currentTime+1,.3);
+            o.connect(g);g.connect(aC.destination);o.start();o.stop(aC.currentTime+2);
+          },i*200);
+        });
+      }catch(e){}
+    }
+    setTimeout(()=>{
+      document.getElementById('complete-overlay').classList.add('show');
+      const tSec=Math.round(totalTime);
+      const tStr=tSec>=60?Math.floor(tSec/60)+'m '+tSec%60+'s':tSec+'s';
+      const statLines=[
+        `Peak particles: ${peakParticles}`,
+        `Perturbations: ${perturbCount}`,
+        `Simulation time: ${tStr}`,
+        '6 eras traversed',
+        `Max speed: ${maxSpeedUsed}x`,
+        `Final complexity: ${(tP*100).toFixed(1)}%`
+      ];
+      document.getElementById('complete-stats').innerHTML=statLines.join('<br>');
+    },4000);
+  }}
+  const ef=tP*6,ne=Math.min(Math.floor(ef),5);
+  eP=ef-ne;
+  if(ne!==curE){
+    curE=ne;annEra(ne);transSlowdown=60;warpEffect=30;
+    try{const prev=parseInt(localStorage.getItem('singularity_max_era')||'0');
+    if(ne>prev)localStorage.setItem('singularity_max_era',ne.toString())}catch(e){}
+    transWave={active:true,x:-50,col:ERAS[ne].col};
+    if(ne>=3)screenShake=8;
+    if(ne>=2)flash(ERAS[ne].col);
+    if(ne>=3)rings.push(new Ring(W/2,H/2,ERAS[ne].col));
+    if(ne===5){flash();rings.push(new Ring(W/2,H/2,[255,255,255]))}
+    // Briefly boost all particle brightness on era transition
+    for(const p of ps)p.brightness=Math.min(1.5,p.brightness+.3);
+  }
+  if(transSlowdown>0){transSlowdown--}
+
+  // Phase boundary indicator: pulse at bottom of screen when close to era transition
+  if(eP>.85){
+    const boundaryAlpha=(eP-.85)/.15*.05;
+    const nextCol=ERAS[Math.min(curE+1,5)].col;
+    const boundaryGd=ctx.createLinearGradient(0,H-5,0,H);
+    boundaryGd.addColorStop(0,'rgba(0,0,0,0)');
+    boundaryGd.addColorStop(1,`rgba(${nextCol[0]},${nextCol[1]},${nextCol[2]},${boundaryAlpha})`);
+    ctx.fillStyle=boundaryGd;ctx.fillRect(0,H-5,W,5);
+  }
+
+  // Milestones
+  for(const m of MILESTONES){
+    if(tP>=m.p&&!msDone.has(m.p)){
+      msDone.add(m.p);showMS(m.text);playChime();
+      clickRipples.push({x:W/2,y:H*.35,r:0,maxR:50,life:1,col:ERAS[curE].col});
+    }
+  }
+
+  // Adjust count
+  const e=ERAS[curE],nx=ERAS[Math.min(curE+1,5)];
+  const tgt=Math.round(lp(e.cnt,nx.cnt,eP)*densityMult*adaptiveQuality);
+  // Spawn new particles near existing ones for organic growth
+  while(ps.length<tgt){
+    if(ps.length>10&&Math.random()<.7){
+      const ref=ps[Math.floor(Math.random()*ps.length)];
+      const angle=Math.random()*6.28;
+      ps.push(new P(ref.x+Math.cos(angle)*20,ref.y+Math.sin(angle)*20));
+    }else{
+      ps.push(new P());
+    }
+  }
+  // Gradually trim excess particles (from perturb/explosions), but not too fast
+  const maxAllowed=tgt+80;
+  if(ps.length>maxAllowed){
+    const trimCount=Math.min(5,ps.length-tgt);
+    for(let i=0;i<trimCount;i++)ps.pop();
+  }
+
+  // Screen shake
+  let shaking=false;
+  if(screenShake>0){
+    const sx=(Math.random()-.5)*screenShake,sy=(Math.random()-.5)*screenShake;
+    ctx.save();ctx.translate(sx,sy);shaking=true;
+    screenShake*=.9;if(screenShake<.5)screenShake=0;
+  }
+
+  // BG with subtle era tint and vertical gradient + breathing
+  const bgCol=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+  const bgBreath=1+Math.sin(ts*.0003)*.1; // Very slow breathing
+  const bgMult=(.02+curE*.003)*bgBreath; // Slightly brighter in later eras
+  if(trails){
+    const bgGd=ctx.createLinearGradient(0,0,0,H);
+    bgGd.addColorStop(0,`rgba(${(bgCol[0]*bgMult)|0},${(bgCol[1]*bgMult)|0},${(bgCol[2]*bgMult*.5)|0},.06)`);
+    bgGd.addColorStop(1,`rgba(${(bgCol[0]*bgMult*.5)|0},${(bgCol[1]*bgMult*.5)|0},${(bgCol[2]*bgMult)|0},.07)`);
+    ctx.fillStyle=bgGd;ctx.fillRect(0,0,W,H);
+  }else{
+    ctx.fillStyle=`rgb(${(bgCol[0]*bgMult)|0},${(bgCol[1]*bgMult)|0},${(bgCol[2]*bgMult)|0})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // Transition wave
+  if(transWave.active){
+    transWave.x+=W*2*rdt; // Crosses screen in ~0.5s
+    if(transWave.x>W+50){transWave.active=false}
+    else{
+      const wGd=ctx.createLinearGradient(transWave.x-40,0,transWave.x+10,0);
+      wGd.addColorStop(0,'rgba(0,0,0,0)');
+      wGd.addColorStop(.4,`rgba(${transWave.col[0]},${transWave.col[1]},${transWave.col[2]},.06)`);
+      wGd.addColorStop(.6,`rgba(${transWave.col[0]},${transWave.col[1]},${transWave.col[2]},.04)`);
+      wGd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=wGd;ctx.fillRect(transWave.x-40,0,50,H);
+    }
+  }
+
+  // Background stars (always visible)
+  drawBgStars(ts);
+
+  // Cosmic dust: very faint drifting points (always visible, very subtle)
+  if(fc%2===0){
+    for(let d=0;d<3;d++){
+      const dx=((ts*.01+d*1234.5)%W+W)%W;
+      const dy=((ts*.008+d*567.8)%H+H)%H;
+      ctx.beginPath();ctx.arc(dx,dy,.3,0,6.28);
+      ctx.fillStyle='rgba(255,255,255,.01)';ctx.fill();
+    }
+  }
+
+  // Warp zoom effect on era transition
+  if(warpEffect>0){
+    warpEffect--;
+    const warpA=warpEffect/30;
+    const cl=ERAS[curE].col;
+    const gd=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.5);
+    gd.addColorStop(0,'rgba(0,0,0,0)');
+    gd.addColorStop(.5,`rgba(${cl[0]},${cl[1]},${cl[2]},${warpA*.02})`);
+    gd.addColorStop(1,`rgba(${cl[0]},${cl[1]},${cl[2]},${warpA*.08})`);
+    ctx.fillStyle=gd;ctx.fillRect(0,0,W,H);
+  }
+
+  // Speed lines when fast-forwarding (>=4x)
+  if(spd>=4){
+    if(Math.random()<.3){
+      const angle=Math.random()*6.28;
+      const dist=W*.3+Math.random()*W*.4;
+      speedLines.push({
+        x:W/2+Math.cos(angle)*dist,y:H/2+Math.sin(angle)*dist,
+        angle,len:40+Math.random()*80,life:1,spd:200+Math.random()*200
+      });
+    }
+    const cl=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+    ctx.lineWidth=.8;
+    for(let i=speedLines.length-1;i>=0;i--){
+      const sl=speedLines[i];
+      sl.x+=Math.cos(sl.angle+Math.PI)*sl.spd*rdt;
+      sl.y+=Math.sin(sl.angle+Math.PI)*sl.spd*rdt;
+      sl.life-=rdt*2;
+      if(sl.life<=0){speedLines.splice(i,1);continue}
+      ctx.beginPath();ctx.moveTo(sl.x,sl.y);
+      ctx.lineTo(sl.x+Math.cos(sl.angle)*sl.len*sl.life,sl.y+Math.sin(sl.angle)*sl.len*sl.life);
+      ctx.strokeStyle=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},${sl.life*.08})`;ctx.stroke();
+    }
+    if(speedLines.length>40)speedLines.splice(0,10);
+  }else{speedLines.length=0}
+
+  // Heartbeat pulse for early eras (subtle bg brightness oscillation)
+  if(curE<=2){
+    const beatRate=curE===0?1.2:curE===1?1.5:2;
+    const beat=Math.pow(Math.max(0,Math.sin(ts*.001*beatRate*Math.PI)),8);
+    if(beat>.01){
+      ctx.fillStyle=`rgba(255,255,255,${beat*.008})`;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  // Phase space noise: random faint dots that represent disorder in Chaos era
+  if(curE===0&&fc%3===0){
+    ctx.fillStyle='rgba(90,120,200,.006)';
+    for(let n=0;n<8;n++){
+      ctx.fillRect(Math.random()*W|0,Math.random()*H|0,1,1);
+    }
+  }
+
+  // Quantum fluctuations + cosmic microwave background in Chaos era
+  if(curE===0){
+    for(let q=0;q<3;q++){
+      if(Math.random()<.15){
+        const qx=Math.random()*W,qy=Math.random()*H,qr=Math.random()*8+2;
+        const qa=Math.random()*.03;
+        ctx.beginPath();ctx.arc(qx,qy,qr,0,6.28);
+        // CMB-style warm/cool patches
+        const warm=Math.random()>.5;
+        ctx.fillStyle=warm?`rgba(140,100,80,${qa})`:`rgba(80,100,180,${qa})`;
+        ctx.fill();
+      }
+    }
+  }
+
+  // Background nebula
+  drawNebula(ts);
+
+  // Rings
+  for(let i=rings.length-1;i>=0;i--){
+    if(!rings[i].update(rdt))rings.splice(i,1);
+    else rings[i].draw();
+  }
+
+  // Shockwaves
+  for(let i=shockwaves.length-1;i>=0;i--){
+    if(!shockwaves[i].update(rdt))shockwaves.splice(i,1);
+    else shockwaves[i].draw();
+  }
+
+  // Gravity wells
+  for(let i=gravWells.length-1;i>=0;i--){
+    if(!gravWells[i].update(rdt))gravWells.splice(i,1);
+    else gravWells[i].draw(ts);
+  }
+
+  // Click ripples
+  for(let i=clickRipples.length-1;i>=0;i--){
+    const cr=clickRipples[i];
+    cr.r+=120*rdt;cr.life=Math.max(0,1-cr.r/cr.maxR);
+    if(cr.life<=0){clickRipples.splice(i,1);continue}
+    ctx.beginPath();ctx.arc(cr.x,cr.y,cr.r,0,6.28);
+    ctx.strokeStyle=`rgba(${cr.col[0]},${cr.col[1]},${cr.col[2]},${cr.life*.3})`;
+    ctx.lineWidth=1.5*cr.life;ctx.stroke();
+  }
+
+  // Slow-motion effect during singularity approach (last 5% of each era)
+  if(eP>.95&&curE<5){
+    // Brief speed reduction creates tension before era transition
+    const tensionFactor=1-((eP-.95)/.05)*.2;
+    // Applied through slowFactor above
+  }
+
+  // Track stats
+  totalTime+=rdt;
+  if(ps.length>peakParticles)peakParticles=ps.length;
+
+  physics(ps,curE,eP);
+  for(const p of ps)p.update(dt,curE,eP);
+  // Emergence glow: bright spots at hub cluster centers during Life era
+  if(curE===2&&fc%5===0){
+    const lifeHubs2=[];for(const p of ps)if(p.hub)lifeHubs2.push(p);
+    for(const h of lifeHubs2){
+      // Count nearby particles
+      let nearby=0;
+      for(let j=0;j<ps.length;j+=4){
+        const d=Math.sqrt((ps[j].x-h.x)**2+(ps[j].y-h.y)**2);
+        if(d<40)nearby++;
+      }
+      if(nearby>3){
+        const emergeA=Math.min(.04,nearby*.003);
+        ctx.beginPath();ctx.arc(h.x,h.y,15+nearby,0,6.28);
+        ctx.fillStyle=`rgba(160,80,255,${emergeA})`;ctx.fill();
+      }
+    }
+  }
+
+  // Swarm formation: particles near hubs in Life era form brief swirl patterns
+  if(curE===2&&fc%30===0){
+    for(const p of ps){
+      if(!p.hub)continue;
+      // Add slight orbital push to nearby non-hub particles
+      for(let j=0;j<ps.length;j+=3){
+        const q=ps[j];if(q.hub)continue;
+        const dx=q.x-p.x,dy=q.y-p.y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d>10&&d<50){
+          q.vx+=-dy*.0005;q.vy+=dx*.0005; // Tangential push
+        }
+      }
+      break; // Only apply to first hub per frame for performance
+    }
+  }
+
+  // Cell division during Life era (very rare)
+  if(curE===2&&Math.random()<.003&&ps.length<tgt+20){
+    const idx=Math.floor(Math.random()*ps.length);
+    const parent=ps[idx];
+    const angle=Math.random()*6.28;
+    const child=new P(parent.x+Math.cos(angle)*3,parent.y+Math.sin(angle)*3);
+    child.vx=Math.cos(angle)*.8;child.vy=Math.sin(angle)*.8;
+    child.birth=.3;ps.push(child);
+    // Visual: mitosis ring at division point
+    clickRipples.push({x:parent.x,y:parent.y,r:0,maxR:20,life:1,col:ERAS[2].col});
+  }
+  // Particle fission during Singularity (rare)
+  if(curE===5&&Math.random()<.01&&ps.length<tgt+40){
+    const idx=Math.floor(Math.random()*ps.length);
+    const parent=ps[idx];
+    const angle=Math.random()*6.28;
+    const child=new P(parent.x+Math.cos(angle)*5,parent.y+Math.sin(angle)*5);
+    child.vx=parent.vx+Math.cos(angle)*1.5;child.vy=parent.vy+Math.sin(angle)*1.5;
+    child.hub=parent.hub;child.birth=.5;
+    ps.push(child);
+    // Small spark at split point
+    if(sparks.length<50)sparks.push({x:parent.x,y:parent.y,vx:Math.cos(angle)*2,vy:Math.sin(angle)*2,life:1});
+  }
+  // Use additive blending for bloom effect in later eras
+  if(curE>=4)ctx.globalCompositeOperation='lighter';
+  drawPs(ps,curE,eP,ts);
+  ctx.globalCompositeOperation='source-over';
+  // Extra bloom pass: faint large glow at center of mass during Singularity
+  if(curE===5){
+    let cmx=0,cmy=0;
+    for(const p of ps){cmx+=p.x;cmy+=p.y}
+    cmx/=ps.length;cmy/=ps.length;
+    const bloomGd=ctx.createRadialGradient(cmx,cmy,0,cmx,cmy,W*.15);
+    bloomGd.addColorStop(0,'rgba(255,255,255,.015)');
+    bloomGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=bloomGd;ctx.fillRect(cmx-W*.15,cmy-W*.15,W*.3,W*.3);
+  }
+
+  // Sparks
+  const sparkCol=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+  for(let i=sparks.length-1;i>=0;i--){
+    const s=sparks[i];
+    s.x+=s.vx*rdt*60;s.y+=s.vy*rdt*60;s.life-=rdt*2;
+    if(s.life<=0){sparks.splice(i,1);continue}
+    ctx.beginPath();ctx.arc(s.x,s.y,s.life*1.5,0,6.28);
+    ctx.fillStyle=`rgba(${sparkCol[0]|0},${sparkCol[1]|0},${sparkCol[2]|0},${s.life*.6})`;ctx.fill();
+  }
+
+  // Neural flash: bright flashing dots traveling along connections during Mind era
+  if(curE===3&&fc%10===0){
+    const mHubs=[];for(const p of ps)if(p.hub)mHubs.push(p);
+    if(mHubs.length>=2&&Math.random()<.1){
+      const a=mHubs[Math.floor(Math.random()*mHubs.length)];
+      const b=mHubs[Math.floor(Math.random()*mHubs.length)];
+      if(a!==b){
+        const d=Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2);
+        if(d<250){
+          // Draw a moving dot along the connection
+          const t=(ts*.003)%1;
+          const fx=a.x+(b.x-a.x)*t,fy=a.y+(b.y-a.y)*t;
+          ctx.beginPath();ctx.arc(fx,fy,2,0,6.28);
+          ctx.fillStyle='rgba(255,200,80,.2)';ctx.fill();
+          ctx.beginPath();ctx.arc(fx,fy,5,0,6.28);
+          ctx.fillStyle='rgba(255,200,80,.05)';ctx.fill();
+        }
+      }
+    }
+  }
+
+  // Thought bubbles from hub clusters during Mind era
+  if(curE===3&&Math.random()<.006){
+    for(const p of ps){
+      if(p.hub&&Math.random()<.15&&thoughtBubbles.length<10){
+        thoughtBubbles.push({x:p.x,y:p.y-10,r:2,maxR:15+Math.random()*10,a:.3,vy:-.3-Math.random()*.5});
+        break;
+      }
+    }
+  }
+  for(let i=thoughtBubbles.length-1;i>=0;i--){
+    const tb=thoughtBubbles[i];
+    tb.r+=rdt*8;tb.y+=tb.vy;tb.a=.3*(1-tb.r/tb.maxR);
+    if(tb.r>=tb.maxR){thoughtBubbles.splice(i,1);continue}
+    ctx.beginPath();ctx.arc(tb.x,tb.y,tb.r,0,6.28);
+    ctx.strokeStyle=`rgba(255,180,60,${tb.a})`;ctx.lineWidth=.5;ctx.stroke();
+  }
+
+  // Global consciousness wave from center during Mind era
+  if(curE===3&&Math.random()<.002){
+    rings.push(new Ring(W/2,H/2,ERAS[3].col));
+  }
+
+  // Consciousness pulses from hub nodes
+  if(curE>=3&&curE<=4&&Math.random()<.005){
+    for(const p of ps){
+      if(p.hub&&Math.random()<.1&&consciousPulses.length<15){
+        consciousPulses.push({x:p.x,y:p.y,r:0,maxR:80+Math.random()*40,life:1,
+          col:ERAS[curE].col2});break;
+      }
+    }
+  }
+  for(let i=consciousPulses.length-1;i>=0;i--){
+    const cp=consciousPulses[i];
+    cp.r+=60*rdt;cp.life=Math.max(0,1-cp.r/cp.maxR);
+    if(cp.life<=0){consciousPulses.splice(i,1);continue}
+    ctx.beginPath();ctx.arc(cp.x,cp.y,cp.r,0,6.28);
+    ctx.strokeStyle=`rgba(${cp.col[0]},${cp.col[1]},${cp.col[2]},${cp.life*.15})`;
+    ctx.lineWidth=1;ctx.stroke();
+  }
+
+  // Energy field (elliptical gradient that breathes)
+  if(curE>=4){
+    const efW=W*.2+Math.sin(ts*.0008)*W*.05;
+    const efH=H*.15+Math.cos(ts*.0006)*H*.04;
+    ctx.save();ctx.translate(W/2,H/2);
+    ctx.scale(efW/100,efH/100);
+    const efGd=ctx.createRadialGradient(0,0,0,0,0,100);
+    const efCol=ERAS[curE].col;
+    efGd.addColorStop(0,`rgba(${efCol[0]},${efCol[1]},${efCol[2]},.02)`);
+    efGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=efGd;ctx.fillRect(-100,-100,200,200);
+    ctx.restore();
+  }
+
+  // Center glow
+  if(curE>=3){
+    const int=curE>=5?.12+Math.sin(ts*.001)*.04:lp(0,.05,eP)*(curE-2);
+    const gd=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.35);
+    const cl=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+    gd.addColorStop(0,`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},${int})`);
+    gd.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gd;ctx.fillRect(0,0,W,H);
+  }
+
+  // Singularity pulsing core with galaxy effect
+  if(curE===5){
+    const pulse=.08+Math.sin(ts*.003)*.04+Math.sin(ts*.007)*.02;
+    const coreSize=120+eP*60; // Core grows as singularity progresses
+    const gd=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,coreSize);
+    gd.addColorStop(0,`rgba(255,255,255,${pulse*1.8})`);
+    gd.addColorStop(.2,`rgba(240,220,255,${pulse*.8})`);
+    gd.addColorStop(.5,`rgba(180,150,255,${pulse*.3})`);
+    gd.addColorStop(.8,`rgba(100,80,200,${pulse*.1})`);
+    gd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gd;
+    const csHalf=coreSize+30;
+    ctx.fillRect(W/2-csHalf,H/2-csHalf,csHalf*2,csHalf*2);
+    // Event horizon: bright thin inner ring
+    ctx.beginPath();ctx.arc(W/2,H/2,40+Math.sin(ts*.003)*5,0,6.28);
+    ctx.strokeStyle=`rgba(255,255,255,${.04+Math.sin(ts*.005)*.02})`;
+    ctx.lineWidth=1.5;ctx.stroke();
+
+    // Pulsing rings at center
+    if(Math.random()<.03)rings.push(new Ring(W/2,H/2,[200+Math.random()*55|0,200+Math.random()*55|0,255]));
+    // Rotating energy beams (spiral arms like a galaxy)
+    const beamCount=4;
+    for(let b=0;b<beamCount;b++){
+      const baseAngle=ts*.0003+b*(Math.PI*2/beamCount);
+      // Draw multiple points along the spiral
+      ctx.beginPath();
+      for(let t=0;t<1;t+=.02){
+        const angle=baseAngle+t*1.5;
+        const len=t*W*.35;
+        const bx=W/2+Math.cos(angle)*len;
+        const by=H/2+Math.sin(angle)*len;
+        if(t===0)ctx.moveTo(bx,by);else ctx.lineTo(bx,by);
+      }
+      ctx.strokeStyle=`rgba(180,160,255,${.02+Math.sin(ts*.002+b)*.015})`;
+      ctx.lineWidth=3;ctx.stroke();
+    }
+    // Concentric orbit circles
+    ctx.lineWidth=.3;
+    for(let orb=1;orb<=5;orb++){
+      const orbR=orb*W*.06;
+      const wobble=Math.sin(ts*.001+orb)*.5;
+      ctx.beginPath();ctx.arc(W/2,H/2,orbR+wobble,0,6.28);
+      ctx.strokeStyle=`rgba(200,200,255,${.02-.002*orb})`;ctx.stroke();
+    }
+    // Energy bands: pulsing rings at different radii
+    for(let band=0;band<3;band++){
+      const bandR=150+band*80+Math.sin(ts*.001+band*2)*20;
+      const bandA=.008+Math.sin(ts*.002+band)*.005;
+      ctx.beginPath();ctx.arc(W/2,H/2,bandR,0,6.28);
+      ctx.strokeStyle=`rgba(200,180,255,${bandA})`;ctx.lineWidth=8;ctx.stroke();
+    }
+
+    // Time crystal: rotating geometric shape at center that becomes more complex
+    ctx.save();ctx.translate(W/2,H/2);ctx.rotate(ts*.0005);
+    const tcSides=4+Math.floor(eP*4); // 4-8 sided shape based on progress
+    const tcR=30+eP*15;
+    ctx.beginPath();
+    for(let s=0;s<=tcSides;s++){
+      const a=s*Math.PI*2/tcSides;
+      const px=Math.cos(a)*tcR,py=Math.sin(a)*tcR;
+      if(s===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=`rgba(200,200,255,${.015+eP*.01})`;ctx.lineWidth=.5;ctx.stroke();
+    ctx.restore();
+
+    // Gravitational lensing ring (bright ring at event horizon)
+    const lensR=80+eP*30+Math.sin(ts*.002)*5;
+    ctx.beginPath();ctx.arc(W/2,H/2,lensR,0,6.28);
+    const lensGd=ctx.createRadialGradient(W/2,H/2,lensR-8,W/2,H/2,lensR+8);
+    lensGd.addColorStop(0,'rgba(0,0,0,0)');
+    lensGd.addColorStop(.3,`rgba(200,180,255,${.03+eP*.02})`);
+    lensGd.addColorStop(.5,`rgba(255,255,255,${.04+eP*.03})`);
+    lensGd.addColorStop(.7,`rgba(200,180,255,${.03+eP*.02})`);
+    lensGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.strokeStyle=lensGd;ctx.lineWidth=12;ctx.stroke();
+  }
+
+  // Quantum entanglement: faint dashed lines connecting distant particles during Singularity
+  if(curE===5&&fc%20===0){
+    ctx.setLineDash([2,6]);ctx.lineWidth=.3;ctx.beginPath();
+    for(let q=0;q<3;q++){
+      const a=ps[Math.floor(Math.random()*ps.length)];
+      const b=ps[Math.floor(Math.random()*ps.length)];
+      if(a&&b&&a!==b){
+        const d=Math.sqrt((b.x-a.x)**2+(b.y-a.y)**2);
+        if(d>W*.3){ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)}
+      }
+    }
+    ctx.strokeStyle='rgba(200,200,255,.015)';ctx.stroke();ctx.setLineDash([]);
+  }
+
+  // EMP ripples during singularity (periodic concentric expanding rings)
+  if(curE===5&&Math.random()<.005){
+    const empR=Math.random()*40+20;
+    clickRipples.push({x:W/2,y:H/2,r:empR,maxR:W*.3,life:1,col:[200,200,255]});
+  }
+
+  // Scanning line effect (era-colored)
+  if(curE>=2){
+    const scanY=(ts*.05+curE*200)%H;
+    const scanAlpha=curE>=4?.03:.015;
+    const scanCol=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+    ctx.fillStyle=`rgba(${scanCol[0]|0},${scanCol[1]|0},${scanCol[2]|0},${scanAlpha})`;
+    ctx.fillRect(0,scanY-1,W,2);
+    // Faint horizontal gradient for the scan line
+    const scanGd=ctx.createLinearGradient(0,scanY-5,0,scanY+5);
+    scanGd.addColorStop(0,'rgba(0,0,0,0)');
+    scanGd.addColorStop(.5,`rgba(${scanCol[0]|0},${scanCol[1]|0},${scanCol[2]|0},${scanAlpha*.3})`);
+    scanGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=scanGd;ctx.fillRect(0,scanY-5,W,10);
+  }
+
+  // Chromatic aberration at edges during Singularity (subtle RGB offset)
+  if(curE===5&&eP>.5&&Math.random()<.02){
+    try{
+      const caOffset=Math.round(1+eP*2);
+      // Shift a thin strip at the edges
+      const edgeH=20;
+      const topStrip=ctx.getImageData(0,0,W,edgeH);
+      ctx.putImageData(topStrip,caOffset,0);
+      const botStrip=ctx.getImageData(0,H-edgeH,W,edgeH);
+      ctx.putImageData(botStrip,-caOffset,H-edgeH);
+    }catch(e){}
+  }
+
+  // Interference wave pattern during singularity (very subtle)
+  if(curE===5&&eP>.3){
+    ctx.lineWidth=.3;ctx.strokeStyle=`rgba(200,200,255,.008)`;
+    ctx.beginPath();
+    for(let x=0;x<W;x+=4){
+      const y=H/2+Math.sin(x*.02+ts*.001)*H*.1*Math.sin(x*.005+ts*.0003);
+      if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+
+  // Dimensional glitch/tear effect during singularity (rare)
+  if(curE===5&&Math.random()<.008){
+    const gy=Math.random()*H;
+    const gh=2+Math.random()*8;
+    const gx=Math.random()*20-10;
+    // Save a strip and redraw it offset
+    try{
+      const strip=ctx.getImageData(0,gy|0,W,gh|0);
+      ctx.putImageData(strip,(gx|0),(gy+gh*.5)|0);
+    }catch(e){}
+  }
+
+  // Time dilation visualization: periodic bright pulses accelerate near singularity
+  if(curE===5&&!sR){
+    const pulseRate=4+eP*16; // Faster as we approach completion
+    const tdPulse=Math.pow(Math.max(0,Math.sin(ts*.001*pulseRate)),20);
+    if(tdPulse>.01){
+      ctx.fillStyle=`rgba(200,180,255,${tdPulse*.015})`;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  // Completion state visual - ambient mode post-singularity
+  if(sR&&tP>.999){
+    ctx.fillStyle='rgba(0,0,0,.005)';ctx.fillRect(0,0,W,H);
+    // Gentle ambient glow oscillation
+    const ambPulse=.02+Math.sin(ts*.0005)*.01;
+    const ambGd=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.3);
+    ambGd.addColorStop(0,`rgba(200,180,255,${ambPulse})`);
+    ambGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=ambGd;ctx.fillRect(0,0,W,H);
+  }
+
+  // Data streams (binary rain) for late eras
+  if(curE>=3){
+    if(Math.random()<.05*(curE-2)){
+      dataStreams.push({x:Math.random()*W,y:H+10,spd:Math.random()*80+40,a:Math.random()*.12+.03,
+        ch:DATA_CHARS[Math.floor(Math.random()*DATA_CHARS.length)]});
+    }
+    ctx.font='10px monospace';
+    for(let i=dataStreams.length-1;i>=0;i--){
+      const s=dataStreams[i];s.y-=s.spd*rdt;
+      if(s.y<-20){dataStreams.splice(i,1);continue}
+      const cl=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+      ctx.fillStyle=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},${s.a})`;
+      ctx.fillText(s.ch,s.x,s.y);
+    }
+    if(dataStreams.length>100)dataStreams.splice(0,20);
+  }
+
+  // Resonance rings at midpoint of close hub pairs
+  if(curE>=2&&curE<=4){
+    const rHubs=[];for(const p of ps)if(p.hub)rHubs.push(p);
+    for(let i=0;i<Math.min(rHubs.length,5);i++){
+      for(let j=i+1;j<Math.min(rHubs.length,5);j++){
+        const d=Math.sqrt((rHubs[j].x-rHubs[i].x)**2+(rHubs[j].y-rHubs[i].y)**2);
+        if(d>30&&d<120){
+          const rmx=(rHubs[i].x+rHubs[j].x)/2,rmy=(rHubs[i].y+rHubs[j].y)/2;
+          const rr=8+Math.sin(ts*.004+i+j)*4;
+          ctx.beginPath();ctx.arc(rmx,rmy,rr,0,6.28);
+          const rcl=ERAS[curE].col;
+          ctx.strokeStyle=`rgba(${rcl[0]},${rcl[1]},${rcl[2]},.04)`;
+          ctx.lineWidth=.5;ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Glowing hub-to-hub connections (special bright links)
+  if(curE>=3){
+    const hubs2=[];
+    for(const p of ps)if(p.hub)hubs2.push(p);
+    if(hubs2.length>=2){
+      ctx.lineWidth=1.5;ctx.globalAlpha=.15;
+      for(let i=0;i<Math.min(hubs2.length,6);i++){
+        for(let j=i+1;j<Math.min(hubs2.length,6);j++){
+          const a=hubs2[i],b2=hubs2[j];
+          const d=Math.sqrt((b2.x-a.x)**2+(b2.y-a.y)**2);
+          if(d>300||d<20)continue;
+          const g=ctx.createLinearGradient(a.x,a.y,b2.x,b2.y);
+          const cl1=lC(ERAS[curE].col,ERAS[curE].col2,.3);
+          const cl2=lC(ERAS[curE].col2,ERAS[curE].col,.3);
+          g.addColorStop(0,`rgb(${cl1[0]|0},${cl1[1]|0},${cl1[2]|0})`);
+          g.addColorStop(1,`rgb(${cl2[0]|0},${cl2[1]|0},${cl2[2]|0})`);
+          ctx.strokeStyle=g;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b2.x,b2.y);ctx.stroke();
+        }
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+
+  // Harmonic standing waves around center during Network era
+  if(curE===4){
+    ctx.lineWidth=.3;ctx.beginPath();
+    for(let angle=0;angle<6.28;angle+=Math.PI/8){
+      const baseR=W*.15;
+      for(let t=0;t<1;t+=.03){
+        const r=baseR+Math.sin(t*12+ts*.002)*15*t;
+        const px=W/2+Math.cos(angle+t*.5)*r;
+        const py=H/2+Math.sin(angle+t*.5)*r;
+        if(t===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+    }
+    ctx.strokeStyle='rgba(255,100,200,.01)';ctx.stroke();
+  }
+
+  // Magnetic field arcs between hub nodes during Network era
+  if(curE>=4){
+    const hubs=[];
+    for(const p of ps)if(p.hub)hubs.push(p);
+    if(hubs.length>=2){
+      ctx.lineWidth=.5;
+      for(let i=0;i<Math.min(hubs.length,8);i++){
+        for(let j=i+1;j<Math.min(hubs.length,8);j++){
+          const a=hubs[i],b=hubs[j];
+          const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy);
+          if(d>400||d<50)continue;
+          // Draw curved arc
+          const mx2=(a.x+b.x)/2,my2=(a.y+b.y)/2;
+          const nx=-dy/d*30,ny=dx/d*30; // perpendicular offset
+          ctx.beginPath();ctx.moveTo(a.x,a.y);
+          ctx.quadraticCurveTo(mx2+nx,my2+ny,b.x,b.y);
+          const cl=ERAS[curE].col2;
+          ctx.strokeStyle=`rgba(${cl[0]},${cl[1]},${cl[2]},.04)`;ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Signal propagation during Network era: visible "data packets" traveling between hubs
+  if(curE===4&&Math.random()<.005){
+    const nHubs=[];for(const p of ps)if(p.hub)nHubs.push(p);
+    if(nHubs.length>=2){
+      const src=nHubs[Math.floor(Math.random()*nHubs.length)];
+      const dst=nHubs[Math.floor(Math.random()*nHubs.length)];
+      if(src!==dst){
+        const d=Math.sqrt((dst.x-src.x)**2+(dst.y-src.y)**2);
+        if(d<300){
+          // Draw packet as a small bright dot with trail
+          const t=(ts*.001)%1;
+          const px=src.x+(dst.x-src.x)*t,py=src.y+(dst.y-src.y)*t;
+          ctx.beginPath();ctx.arc(px,py,2,0,6.28);
+          ctx.fillStyle='rgba(255,100,200,.25)';ctx.fill();
+          // Trail behind the packet
+          for(let tb=1;tb<4;tb++){
+            const tt=Math.max(0,t-tb*.05);
+            const tx=src.x+(dst.x-src.x)*tt,ty=src.y+(dst.y-src.y)*tt;
+            ctx.beginPath();ctx.arc(tx,ty,1.5-tb*.3,0,6.28);
+            ctx.fillStyle=`rgba(255,100,200,${(.15-tb*.03)})`;ctx.fill();
+          }
+        }
+      }
+    }
+  }
+
+  // Photon bursts during Network era (bright particle emissions)
+  if(curE===4&&Math.random()<.003){
+    const hubP=ps.find(p=>p.hub);
+    if(hubP){
+      for(let a=0;a<6;a++){
+        const angle=a*Math.PI/3+Math.random()*.3;
+        sparks.push({x:hubP.x,y:hubP.y,vx:Math.cos(angle)*4,vy:Math.sin(angle)*4,life:1});
+      }
+    }
+  }
+
+  // Floating word fragments for Network+ eras
+  if(curE>=3){
+    if(Math.random()<.008*(curE-2)){
+      floatingTexts.push({
+        x:Math.random()*W,y:H+20,
+        spd:Math.random()*30+15,a:.08+Math.random()*.06,
+        text:NET_WORDS[Math.floor(Math.random()*NET_WORDS.length)],
+        drift:(Math.random()-.5)*.3
+      });
+    }
+    ctx.font='9px monospace';
+    for(let i=floatingTexts.length-1;i>=0;i--){
+      const ft=floatingTexts[i];ft.y-=ft.spd*rdt;ft.x+=ft.drift;
+      if(ft.y<-30){floatingTexts.splice(i,1);continue}
+      const cl=ERAS[curE].col2;
+      ctx.fillStyle=`rgba(${cl[0]},${cl[1]},${cl[2]},${ft.a})`;
+      ctx.fillText(ft.text,ft.x,ft.y);
+    }
+    if(floatingTexts.length>40)floatingTexts.splice(0,10);
+  }
+
+  // Edge glow effect
+  edgeGlowPhase+=rdt;
+  if(curE>=1){
+    const cl=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+    const edgeAlpha=(.01+curE*.005)*(.7+Math.sin(edgeGlowPhase*.5)*.3);
+    // Top edge
+    const topGd=ctx.createLinearGradient(0,0,0,60);
+    topGd.addColorStop(0,`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},${edgeAlpha})`);
+    topGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=topGd;ctx.fillRect(0,0,W,60);
+    // Bottom edge
+    const botGd=ctx.createLinearGradient(0,H,0,H-60);
+    botGd.addColorStop(0,`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},${edgeAlpha*.5})`);
+    botGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=botGd;ctx.fillRect(0,H-60,W,60);
+  }
+
+  // Aurora effect for Mind/Network eras (multi-layered)
+  if(curE>=3&&curE<=4){
+    const auroraIntensity=curE===4?.04:.02;
+    const cl=ERAS[curE].col2;
+    const cl1=ERAS[curE].col;
+    // Layer 1: primary aurora
+    for(let x=0;x<W;x+=W/8){
+      const waveY=40+Math.sin(ts*.0005+x*.003)*20+Math.cos(ts*.0008+x*.005)*15;
+      const gd=ctx.createRadialGradient(x,waveY,0,x,waveY,120);
+      gd.addColorStop(0,`rgba(${cl[0]},${cl[1]},${cl[2]},${auroraIntensity})`);
+      gd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gd;ctx.fillRect(x-120,0,240,200);
+    }
+    // Layer 2: secondary aurora (offset, different color)
+    for(let x=W/16;x<W;x+=W/6){
+      const waveY=60+Math.sin(ts*.0003+x*.004)*25+Math.cos(ts*.0006+x*.002)*20;
+      const gd=ctx.createRadialGradient(x,waveY,0,x,waveY,80);
+      gd.addColorStop(0,`rgba(${cl1[0]},${cl1[1]},${cl1[2]},${auroraIntensity*.5})`);
+      gd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gd;ctx.fillRect(x-80,0,160,160);
+    }
+  }
+
+  // Subtle background grid for Network era (hexagonal for Network, square for Singularity)
+  if(curE>=4){
+    const gridAlpha=curE===5?.015:.01;
+    if(curE===4){
+      // Hexagonal grid
+      const hexR=50;const hexH=hexR*Math.sqrt(3);
+      ctx.lineWidth=.3;ctx.strokeStyle=`rgba(255,255,255,${gridAlpha})`;
+      ctx.beginPath();
+      for(let row=-1;row<H/hexH+1;row++){
+        for(let col=-1;col<W/(hexR*1.5)+1;col++){
+          const cx2=col*hexR*1.5;
+          const cy2=row*hexH+(col%2?hexH/2:0);
+          for(let a=0;a<6;a++){
+            const ax=cx2+hexR*.5*Math.cos(a*Math.PI/3);
+            const ay=cy2+hexR*.5*Math.sin(a*Math.PI/3);
+            const bx=cx2+hexR*.5*Math.cos((a+1)*Math.PI/3);
+            const by=cy2+hexR*.5*Math.sin((a+1)*Math.PI/3);
+            ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
+          }
+        }
+      }
+      ctx.stroke();
+    }else{
+      // Square grid for Singularity
+      const gridSize=60;
+      ctx.strokeStyle=`rgba(255,255,255,${gridAlpha})`;
+      ctx.lineWidth=.3;ctx.beginPath();
+      for(let x=0;x<W;x+=gridSize){ctx.moveTo(x,0);ctx.lineTo(x,H)}
+      for(let y=0;y<H;y+=gridSize){ctx.moveTo(0,y);ctx.lineTo(W,y)}
+      ctx.stroke();
+    }
+  }
+
+  // Mouse cursor glow and wake effect
+  if(mx>0&&my>0){
+    const cl=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+    const intensity=md?.2:.04;
+    const radius=md?80:40;
+    const gd=ctx.createRadialGradient(mx,my,0,mx,my,radius);
+    gd.addColorStop(0,`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},${intensity})`);
+    gd.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gd;
+    ctx.fillRect(mx-radius,my-radius,radius*2,radius*2);
+    // Subtle crosshair
+    if(!md){
+      ctx.lineWidth=.5;ctx.strokeStyle=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},.08)`;
+      ctx.beginPath();ctx.moveTo(mx-12,my);ctx.lineTo(mx-4,my);
+      ctx.moveTo(mx+4,my);ctx.lineTo(mx+12,my);
+      ctx.moveTo(mx,my-12);ctx.lineTo(mx,my-4);
+      ctx.moveTo(mx,my+4);ctx.lineTo(mx,my+12);
+      ctx.stroke();
+    }
+    // Mouse wake: spawn particles along fast mouse movement
+    if(prevMx>0){
+      const dx=mx-prevMx,dy=my-prevMy,mSpeed=Math.sqrt(dx*dx+dy*dy);
+      if(mSpeed>8&&wakeTrail.length<30){
+        wakeTrail.push({x:mx+(Math.random()-.5)*10,y:my+(Math.random()-.5)*10,life:1,
+          s:Math.min(2,mSpeed*.02),col:cl});
+      }
+    }
+    prevMx=mx;prevMy=my;
+  }
+  // Draw wake particles
+  for(let i=wakeTrail.length-1;i>=0;i--){
+    const w=wakeTrail[i];w.life-=rdt*3;
+    if(w.life<=0){wakeTrail.splice(i,1);continue}
+    ctx.beginPath();ctx.arc(w.x,w.y,w.s*w.life,0,6.28);
+    ctx.fillStyle=`rgba(${w.col[0]|0},${w.col[1]|0},${w.col[2]|0},${w.life*.3})`;ctx.fill();
+  }
+
+  // Lens flare / light leak (subtle, top-right)
+  if(curE>=4){
+    const flareX=W*.85,flareY=H*.1;
+    const flareA=curE===5?.03:.015;
+    const fGd=ctx.createRadialGradient(flareX,flareY,0,flareX,flareY,200);
+    fGd.addColorStop(0,`rgba(255,220,200,${flareA+Math.sin(ts*.001)*.01})`);
+    fGd.addColorStop(.5,`rgba(255,200,150,${flareA*.3})`);
+    fGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=fGd;ctx.fillRect(flareX-200,0,400,300);
+  }
+
+  // Vignette (stronger in later eras for dramatic focus)
+  const vigStrength=curE>=4?.45:curE>=2?.4:.35;
+  const vig=ctx.createRadialGradient(W/2,H/2,W*.3,W/2,H/2,W*.75);
+  vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,`rgba(0,0,0,${vigStrength})`);
+  ctx.fillStyle=vig;ctx.fillRect(0,0,W,H);
+
+  // Chemistry era: draw molecular bonds (with occasional double bonds)
+  if(curE===1||(curE===0&&eP>.5)){
+    const col2=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+    ctx.lineWidth=1.5;ctx.beginPath();
+    const dblBonds=[];
+    for(let i=0;i<ps.length;i++){
+      for(let j=i+1;j<Math.min(i+8,ps.length);j++){
+        const dx=ps[j].x-ps[i].x,dy=ps[j].y-ps[i].y,d=Math.sqrt(dx*dx+dy*dy);
+        if(d<35&&d>5){
+          ctx.moveTo(ps[i].x,ps[i].y);ctx.lineTo(ps[j].x,ps[j].y);
+          // Electron orbit circles around hub particles in Chemistry era (with wobble)
+    if(curE===1){
+      for(const p of ps){
+        if(!p.hub)continue;
+        const orbR=8+Math.sin(ts*.003+p.phase)*2;
+        // Wobbling elliptical orbit
+        ctx.save();ctx.translate(p.x,p.y);
+        ctx.rotate(Math.sin(ts*.001+p.phase)*.3);
+        ctx.scale(1,.7);
+        ctx.moveTo(orbR,0);ctx.arc(0,0,orbR,0,6.28);
+        ctx.restore();
+      }
+    }
+    // Double bond for hub particles (rare structural bonds)
+          if((ps[i].hub||ps[j].hub)&&d<25)dblBonds.push([ps[i],ps[j],dx,dy,d]);
+        }
+      }
+    }
+    ctx.strokeStyle=`rgba(${col2[0]|0},${col2[1]|0},${col2[2]|0},.2)`;ctx.stroke();
+    // Draw double bonds (offset parallel line)
+    if(dblBonds.length>0){
+      ctx.lineWidth=.8;ctx.beginPath();
+      for(const [a,b,dx,dy,d] of dblBonds){
+        const nx=-dy/d*3,ny=dx/d*3;
+        ctx.moveTo(a.x+nx,a.y+ny);ctx.lineTo(b.x+nx,b.y+ny);
+      }
+      ctx.strokeStyle=`rgba(${col2[0]|0},${col2[1]|0},${col2[2]|0},.12)`;ctx.stroke();
+    }
+  }
+
+  // Probability clouds around hub clusters during Mind era
+  if(curE===3){
+    for(const p of ps){
+      if(!p.hub)continue;
+      const cloudR=30+Math.sin(ts*.002+p.phase)*10;
+      const gd=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,cloudR);
+      gd.addColorStop(0,`rgba(255,180,60,.015)`);
+      gd.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gd;ctx.fillRect(p.x-cloudR,p.y-cloudR,cloudR*2,cloudR*2);
+    }
+  }
+
+  // Brainwave/waveform visualization at bottom during Mind era
+  if(curE===3){
+    ctx.lineWidth=.5;ctx.beginPath();
+    const waveY=H-80;
+    for(let x=0;x<W;x+=2){
+      const y=waveY+Math.sin(x*.02+ts*.003)*8+Math.sin(x*.05+ts*.005)*4+Math.sin(x*.01-ts*.002)*12;
+      if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle='rgba(255,180,60,.02)';ctx.stroke();
+  }
+
+  // Synaptic flash between close hub particles during Mind era
+  if(curE>=3&&Math.random()<.01){
+    const hArr=[];for(const p of ps)if(p.hub)hArr.push(p);
+    if(hArr.length>=2){
+      const a2=hArr[Math.floor(Math.random()*hArr.length)];
+      let closest=null,minD=Infinity;
+      for(const b of hArr){
+        if(b===a2)continue;
+        const d=Math.sqrt((b.x-a2.x)**2+(b.y-a2.y)**2);
+        if(d<minD&&d<200){minD=d;closest=b}
+      }
+      if(closest){
+        // Draw bright flash along the connection
+        ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(a2.x,a2.y);ctx.lineTo(closest.x,closest.y);
+        const flashCol=ERAS[curE].col;
+        ctx.strokeStyle=`rgba(${flashCol[0]},${flashCol[1]},${flashCol[2]},.3)`;
+        ctx.stroke();
+        // Flash glow at both ends
+        for(const pt of [a2,closest]){
+          ctx.beginPath();ctx.arc(pt.x,pt.y,5,0,6.28);
+          ctx.fillStyle=`rgba(${flashCol[0]},${flashCol[1]},${flashCol[2]},.2)`;ctx.fill();
+        }
+      }
+    }
+  }
+
+  // Data flow arrows during Mind era (subtle directional lines)
+  if(curE===3){
+    const mindCl=ERAS[3].col;
+    ctx.lineWidth=.5;ctx.strokeStyle=`rgba(${mindCl[0]},${mindCl[1]},${mindCl[2]},.05)`;
+    ctx.beginPath();
+    for(let i=0;i<ps.length;i+=5){ // sample every 5th particle
+      const p=ps[i];
+      if(p.birth<.5)continue;
+      const vel=Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+      if(vel<.3)continue;
+      const nx=p.vx/vel,ny=p.vy/vel;
+      ctx.moveTo(p.x,p.y);
+      ctx.lineTo(p.x+nx*15,p.y+ny*15);
+    }
+    ctx.stroke();
+  }
+
+  // Symmetry lines between paired hub particles during Life era (bilateral symmetry)
+  if(curE===2){
+    const lifeHubs=[];for(const p of ps)if(p.hub)lifeHubs.push(p);
+    if(lifeHubs.length>=2){
+      ctx.setLineDash([2,4]);ctx.lineWidth=.3;
+      const lifeCl2=ERAS[2].col2;
+      ctx.strokeStyle=`rgba(${lifeCl2[0]},${lifeCl2[1]},${lifeCl2[2]},.06)`;
+      ctx.beginPath();
+      for(let i=0;i<Math.min(lifeHubs.length,4);i++){
+        const midX=(lifeHubs[i].x+W/2)/2,midY=(lifeHubs[i].y+H/2)/2;
+        ctx.moveTo(lifeHubs[i].x,lifeHubs[i].y);
+        ctx.lineTo(W-lifeHubs[i].x,lifeHubs[i].y); // Mirror line
+      }
+      ctx.stroke();ctx.setLineDash([]);
+    }
+  }
+
+  // DNA helix near hub particles during Life era
+  if(curE===2){
+    const lifeCl=ERAS[2].col;
+    ctx.lineWidth=.5;
+    for(const p of ps){
+      if(!p.hub)continue;
+      ctx.beginPath();
+      for(let t=0;t<20;t++){
+        const y=p.y-10+t;
+        const x1=p.x+Math.sin(t*.5+ts*.003)*6;
+        const x2=p.x-Math.sin(t*.5+ts*.003)*6;
+        if(t===0){ctx.moveTo(x1,y)}else ctx.lineTo(x1,y);
+      }
+      ctx.strokeStyle=`rgba(${lifeCl[0]},${lifeCl[1]},${lifeCl[2]},.1)`;ctx.stroke();
+      ctx.beginPath();
+      for(let t=0;t<20;t++){
+        const y=p.y-10+t;
+        const x2=p.x-Math.sin(t*.5+ts*.003)*6;
+        if(t===0){ctx.moveTo(x2,y)}else ctx.lineTo(x2,y);
+      }
+      ctx.strokeStyle=`rgba(${lifeCl[0]},${lifeCl[1]},${lifeCl[2]},.08)`;ctx.stroke();
+    }
+  }
+
+  // Film grain overlay (very subtle, performance-friendly)
+  if(curE>=3&&fc%2===0){
+    const grainA=curE>=4?.02:.01;
+    for(let g=0;g<5;g++){
+      const gx=Math.random()*W,gy=Math.random()*H;
+      ctx.fillStyle=`rgba(255,255,255,${grainA*Math.random()})`;
+      ctx.fillRect(gx|0,gy|0,1,1);
+    }
+  }
+
+  // Color grading (subtle tint overlay; rainbow shimmer during Singularity)
+  if(curE>=1){
+    const gradeA=.01+curE*.005;
+    let gc;
+    if(curE===5){
+      // Slowly cycle through all era colors for a rainbow tint
+      const cycleIdx=(ts*.0002)%5;
+      const cIdx=Math.floor(cycleIdx);
+      const cFrac=cycleIdx-cIdx;
+      gc=lC(ERAS[cIdx].col,ERAS[(cIdx+1)%6].col,cFrac);
+    }else{
+      gc=ERAS[curE].col;
+    }
+    ctx.fillStyle=`rgba(${gc[0]|0},${gc[1]|0},${gc[2]|0},${gradeA})`;
+    ctx.globalCompositeOperation='overlay';
+    ctx.fillRect(0,0,W,H);
+    ctx.globalCompositeOperation='source-over';
+  }
+
+  // Subtle noise texture at very bottom corners (frame effect)
+  if(curE>=3){
+    const cornerA=.005;
+    const cornerR=80;
+    // Bottom-left
+    const blGd=ctx.createRadialGradient(0,H,0,0,H,cornerR);
+    blGd.addColorStop(0,`rgba(0,0,0,${cornerA*3})`);
+    blGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=blGd;ctx.fillRect(0,H-cornerR,cornerR,cornerR);
+    // Bottom-right
+    const brGd=ctx.createRadialGradient(W,H,0,W,H,cornerR);
+    brGd.addColorStop(0,`rgba(0,0,0,${cornerA*3})`);
+    brGd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=brGd;ctx.fillRect(W-cornerR,H-cornerR,cornerR,cornerR);
+  }
+
+  // End screen shake
+  if(shaking)ctx.restore();
+
+  updAud(curE,eP);
+  qT+=dt*1000;if(qT>14000){qT=0;showQ()}
+  // Update HUD every 3 frames for performance
+  if(fc%3===0)updHUD();
+}
+
+function updHUD(){
+  document.getElementById('timeline-fill').style.width=(tP*100)+'%';
+  const ef=tP*6,era=Math.min(Math.floor(ef),5),ip=ef-era;
+  const targetYr=lp(ERAS[era].yr,ERAS[Math.min(era+1,5)].yr,ip);
+  dYR=smoothNum(dYR,targetYr);
+  const yr=Math.round(dYR);
+  const yd=document.getElementById('year-display');
+  yd.textContent=yr;
+  const cl=lC(ERAS[curE].col,ERAS[Math.min(curE+1,5)].col,eP);
+  yd.style.color=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},.25)`;
+  yd.style.textShadow=`0 0 60px rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},.15)`;
+  dSP=smoothNum(dSP,ps.length);dSC=smoothNum(dSC,cn);
+  document.getElementById('sp').textContent=Math.round(dSP);
+  document.getElementById('sc').textContent=Math.round(dSC);
+  document.getElementById('sx').textContent=(tP*100).toFixed(1)+'%';
+  document.getElementById('sf').textContent=fps;
+  const entropy=Math.max(0,(1-tP)*100).toFixed(1);
+  document.getElementById('se').textContent=entropy+'%';
+  const tm=Math.round(totalTime);
+  document.getElementById('st').textContent=tm>=60?Math.floor(tm/60)+'m '+tm%60+'s':tm+'s';
+  const yrRing=document.getElementById('year-ring');
+  if(yrRing){
+    yrRing.classList.toggle('visible',curE>=3);
+    if(curE>=3){
+      const ringCol=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},.06)`;
+      yrRing.querySelector('circle').setAttribute('stroke',ringCol);
+    }
+  }
+  document.getElementById('intel-fill').style.height=(tP*100)+'%';
+  document.getElementById('intel-fill').style.background=`linear-gradient(to top,rgb(${cl[0]|0},${cl[1]|0},${cl[2]|0}),rgb(255,255,255))`;
+  document.getElementById('timeline-fill').style.background=`rgb(${cl[0]|0},${cl[1]|0},${cl[2]|0})`;
+  document.querySelectorAll('.tm').forEach((m,i)=>{
+    m.classList.toggle('active',i<curE);m.classList.toggle('current',i===curE);
+    if(i===curE)m.style.color=`rgb(${cl[0]|0},${cl[1]|0},${cl[2]|0})`;
+    else m.style.color='';
+  });
+  // Update control accents in late eras
+  if(curE>=4){
+    document.querySelectorAll('.btn.on').forEach(b=>{
+      b.style.borderColor=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},.25)`;
+    });
+  }
+  // Era info
+  const eInfo=document.getElementById('era-info');
+  if(eInfo){
+    const eraProgress=Math.round(eP*100);
+    eInfo.innerHTML=`Era ${curE+1}/6<br>${ERAS[curE].name}<br><span style="font-size:7px;opacity:.5">${eraProgress}% complete</span>`;
+    eInfo.style.color=`rgba(${cl[0]|0},${cl[1]|0},${cl[2]|0},.35)`;
+  }
+}
+
+// ============ UI ============
+function annEra(e){
+  const el=document.getElementById('era-announce');
+  const nm=document.getElementById('era-name');
+  nm.textContent=ERAS[e].name;
+  const c=ERAS[e].col;
+  nm.style.color=`rgb(${c[0]},${c[1]},${c[2]})`;
+  nm.style.textShadow=`0 0 60px rgba(${c[0]},${c[1]},${c[2]},.4)`;
+  document.getElementById('era-desc').textContent=ERAS[e].desc;
+  el.className='show';setTimeout(()=>el.className='hide',4000);
+}
+function showMS(text){
+  const el=document.getElementById('milestone');
+  el.textContent=text;
+  const cl=ERAS[curE].col;
+  el.style.color=`rgb(${cl[0]},${cl[1]},${cl[2]})`;
+  el.style.textShadow=`0 0 30px rgba(${cl[0]},${cl[1]},${cl[2]},.4)`;
+  el.className='show';
+  setTimeout(()=>el.className='hide',3500);
+}
+function showQ(){
+  let i;do{i=Math.floor(Math.random()*QUOTES.length)}while(i===cQ&&QUOTES.length>1);cQ=i;
+  const b=document.getElementById('quote-box');
+  const qt=document.getElementById('quote-text');
+  const qa=document.getElementById('quote-author');
+  // Color quote text with current era color
+  const qcl=ERAS[curE].col;
+  qt.style.color=`rgba(${qcl[0]},${qcl[1]},${qcl[2]},.7)`;
+  qt.textContent='\u201c'+QUOTES[i].t+'\u201d';
+  qa.textContent='\u2014 '+QUOTES[i].a;
+  b.classList.add('visible');setTimeout(()=>b.classList.remove('visible'),9000);
+}
+function flash(col){
+  const f=document.getElementById('flash');
+  if(col){
+    f.style.background=`rgb(${col[0]},${col[1]},${col[2]})`;
+    f.style.opacity='.35';
+    f.style.transition='opacity .15s';
+    setTimeout(()=>{f.style.opacity='0';setTimeout(()=>{f.style.background='#fff'},200)},120);
+  }else{
+    f.style.background='#fff';
+    f.style.transition='opacity .08s';
+    f.style.opacity='.4';setTimeout(()=>f.style.opacity='0',100);
+    setTimeout(()=>{f.style.opacity='.2';setTimeout(()=>f.style.opacity='0',80)},300);
+  }
+}
+
+function go(){
+  // Change button text for feedback
+  document.getElementById('start-btn').textContent='Initializing...';
+  document.getElementById('start-btn').style.pointerEvents='none';
+  // Make intro particles converge to center before fading
+  for(const p of introPs){
+    p.vx=(W/2-p.x)*.01;p.vy=(H/2-p.y)*.01;
+  }
+  document.getElementById('intro').classList.add('fade');
+  setTimeout(()=>document.getElementById('intro').style.display='none',2000);
+  document.getElementById('year-display').classList.add('visible');
+  resize();ps=[];
+  // Spawn particles from center outward for a more dramatic start
+  for(let i=0;i<ERAS[0].cnt;i++){
+    const angle=Math.random()*6.28,dist=Math.random()*50;
+    const p=new P(W/2+Math.cos(angle)*dist,H/2+Math.sin(angle)*dist);
+    p.vx=(Math.random()-.5)*4;p.vy=(Math.random()-.5)*4;
+    ps.push(p);
+  }
+  run=1;
+  // Initial burst of sparks from center
+  for(let i=0;i<25;i++){
+    sparks.push({x:W/2,y:H/2,vx:(Math.random()-.5)*8,vy:(Math.random()-.5)*8,life:1});
+  }
+  rings.push(new Ring(W/2,H/2,[90,120,200]));
+  // Brief creation narrative
+  const narr=['In the beginning, there was only chaos...','From randomness, order shall emerge.','Watch intelligence unfold.'];
+  narr.forEach((text,i)=>{
+    setTimeout(()=>showMS(text),1000+i*3500);
+  });
+  setTimeout(()=>annEra(0),500);
+  // Show first quote after narrative completes
+  setTimeout(()=>showQ(),8000);
+  requestAnimationFrame(tick);
+}
+function tPause(){
+  paused=!paused;document.getElementById('bp').textContent=paused?'Play':'Pause';
+  document.getElementById('bp').classList.toggle('on',paused);if(!paused)lt=0;
+}
+function cSpeed(){
+  const sp=[.25,.5,1,2,4,8];spd=sp[(sp.indexOf(spd)+1)%sp.length];
+  document.getElementById('bs').textContent=spd+'x';
+  document.getElementById('bs').classList.toggle('on',spd!==1);
+  if(spd>maxSpeedUsed)maxSpeedUsed=spd;
+  // Visual feedback: brief flash on speed change
+  if(spd>=4)flash([100,100,255]);
+}
+let perturbCooldown=0;
+function perturb(){
+  if(perturbCooldown>0)return;
+  perturbCooldown=1;setTimeout(()=>perturbCooldown=0,500);
+  perturbCount++;
+  if(navigator.vibrate)try{navigator.vibrate(50)}catch(e){}
+  const cx=W/2+(Math.random()-.5)*W*.4,cy=H/2+(Math.random()-.5)*H*.4;
+  for(const p of ps){const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<350&&d>0){const f=4/(d*.08+1);p.vx+=(dx/d)*f;p.vy+=(dy/d)*f}}
+  for(let i=0;i<30;i++){const p=new P(cx+(Math.random()-.5)*30,cy+(Math.random()-.5)*30);
+    p.vx=(Math.random()-.5)*6;p.vy=(Math.random()-.5)*6;ps.push(p)}
+  rings.push(new Ring(cx,cy,ERAS[curE].col));
+  shockwaves.push(new Shockwave(cx,cy,ERAS[curE].col));
+  screenShake=6;flash();
+  const st=document.getElementById('stats');
+  st.classList.add('highlight');setTimeout(()=>st.classList.remove('highlight'),600);
+  // Visual echo: temporarily increase trail length
+  for(const p of ps){if(p.tr.length>4)p.brightness=Math.min(1.5,p.brightness+.2)}
+}
+function tDensity(){
+  const levels=[.5,1,1.5,2,3];
+  densityMult=levels[(levels.indexOf(densityMult)+1)%levels.length];
+  const labels={0.5:'Sparse',1:'Normal',1.5:'Dense',2:'Packed',3:'Max'};
+  document.getElementById('bd').textContent=labels[densityMult]||'Normal';
+  document.getElementById('bd').classList.toggle('on',densityMult>1);
+  // Brief flash feedback on density change
+  if(densityMult>=2)flash([50,50,100]);
+}
+function tTrails(){trails=!trails;document.getElementById('bt').classList.toggle('on',trails);
+  if(!trails)for(const p of ps)p.tr.length=0}
+function tAudio(){
+  if(!aC)initAud();aOn=!aOn;
+  document.getElementById('ba').textContent=aOn?'Sound On':'Sound';
+  document.getElementById('ba').classList.toggle('on',aOn);
+  if(!aOn&&gN)gN.gain.setTargetAtTime(0,aC.currentTime,.3);
+}
+function goFS(){
+  if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{});
+  else document.exitFullscreen();
+}
+function shareSnap(){
+  const toast=document.getElementById('share-toast');
+  if(navigator.share&&navigator.canShare){
+    cv.toBlob(blob=>{
+      const file=new File([blob],'singularity.png',{type:'image/png'});
+      if(navigator.canShare({files:[file]})){
+        navigator.share({title:'Singularity Simulator',text:'Watch intelligence emerge from chaos.',url:location.href,files:[file]}).catch(()=>{});
+        return;
+      }
+    });
+  }
+  const link=document.createElement('a');
+  link.download='singularity-'+ERAS[curE].name.toLowerCase().replace(/\s+/g,'-')+'.png';
+  link.href=cv.toDataURL('image/png');link.click();
+  toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2000);
+}
+function doReset(){
+  tP=0;curE=0;eP=0;lt=0;sR=0;msDone.clear();rings=[];shockwaves=[];gravWells=[];sparks=[];consciousPulses=[];clickRipples=[];thoughtBubbles=[];wakeTrail=[];ps=[];dataStreams=[];floatingTexts=[];transSlowdown=0;adaptiveQuality=1;
+  totalTime=0;peakParticles=0;perturbCount=0;speedLines=[];screenShake=0;
+  document.getElementById('complete-overlay').classList.remove('show');
+  const yrRing2=document.getElementById('year-ring');if(yrRing2)yrRing2.classList.remove('visible');
+  // Spawn particles from center for a dramatic reset
+  for(let i=0;i<ERAS[0].cnt;i++){
+    const angle=Math.random()*6.28,dist=Math.random()*30;
+    const p=new P(W/2+Math.cos(angle)*dist,H/2+Math.sin(angle)*dist);
+    p.vx=(Math.random()-.5)*3;p.vy=(Math.random()-.5)*3;ps.push(p);
+  }
+  flash([90,120,200]);rings.push(new Ring(W/2,H/2,[90,120,200]));
+  annEra(0);ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+}
+function seekTL(ev){
+  const r=document.getElementById('timeline-track').getBoundingClientRect();
+  tP=Math.max(.001,Math.min((ev.clientX-r.left)/r.width,.9999));
+  const ef=tP*6,ne=Math.min(Math.floor(ef),5);
+  if(ne!==curE){curE=ne;annEra(ne)}eP=ef-curE;sR=curE===5;
+  msDone.clear();for(const m of MILESTONES)if(tP>=m.p)msDone.add(m.p);
+}
+
+// Timeline dragging
+let tlDrag=false;
+document.getElementById('timeline-track').addEventListener('mousedown',e=>{tlDrag=true;seekTL(e)});
+document.addEventListener('mousemove',e=>{if(tlDrag)seekTL(e)});
+document.addEventListener('mouseup',()=>tlDrag=false);
+
+// Double-click explosion
+cv.addEventListener('dblclick',e=>{
+  if(!run)return;
+  const cx=e.clientX,cy=e.clientY;
+  // Big burst
+  for(const p of ps){
+    const dx=p.x-cx,dy=p.y-cy,d=Math.sqrt(dx*dx+dy*dy);
+    if(d<200&&d>0){const f=6/(d*.05+1);p.vx+=(dx/d)*f;p.vy+=(dy/d)*f}
+  }
+  for(let i=0;i<50;i++){
+    const angle=Math.random()*6.28,speed=Math.random()*5+2;
+    const p=new P(cx,cy);
+    p.vx=Math.cos(angle)*speed;p.vy=Math.sin(angle)*speed;ps.push(p);
+  }
+  rings.push(new Ring(cx,cy,ERAS[curE].col));
+  rings.push(new Ring(cx,cy,ERAS[curE].col2));
+  shockwaves.push(new Shockwave(cx,cy,[255,255,255]));
+  flash();
+});
+
+// ============ EVENTS ============
+window.addEventListener('resize',resize);
+cv.addEventListener('mousemove',e=>{tmx=e.clientX;tmy=e.clientY});
+cv.addEventListener('mousedown',e=>{md=1;tmx=e.clientX;tmy=e.clientY;mx=tmx;my=tmy;
+  if(run){
+    gravWells.push(new GravWell(e.clientX,e.clientY,ERAS[curE].col));
+    clickRipples.push({x:e.clientX,y:e.clientY,r:0,maxR:60,life:1,col:ERAS[curE].col});
+    // If clicking near a hub particle in Network+ era, trigger a local pulse
+    if(curE>=4){
+      for(const p of ps){
+        if(!p.hub)continue;
+        const d=Math.sqrt((p.x-e.clientX)**2+(p.y-e.clientY)**2);
+        if(d<30){
+          consciousPulses.push({x:p.x,y:p.y,r:0,maxR:100,life:1,col:ERAS[curE].col2});
+          p.brightness=1.5;break;
+        }
+      }
+    }
+  }
+});
+cv.addEventListener('mouseup',()=>md=0);
+cv.addEventListener('mouseleave',()=>{md=0;mx=-9e3;my=-9e3;tmx=-9e3;tmy=-9e3});
+cv.addEventListener('touchstart',e=>{e.preventDefault();md=1;tmx=e.touches[0].clientX;tmy=e.touches[0].clientY;mx=tmx;my=tmy;
+  if(run){
+    clickRipples.push({x:tmx,y:tmy,r:0,maxR:50,life:1,col:ERAS[curE].col});
+    if(navigator.vibrate)try{navigator.vibrate(15)}catch(ex){}
+  }
+},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();tmx=e.touches[0].clientX;tmy=e.touches[0].clientY},{passive:false});
+cv.addEventListener('touchend',()=>{md=0;mx=-9e3;my=-9e3;tmx=-9e3;tmy=-9e3});
+document.addEventListener('keydown',e=>{
+  if(e.key===' '){e.preventDefault();tPause()}
+  if(e.key==='s'||e.key==='S')cSpeed();
+  if(e.key==='p'||e.key==='P')perturb();
+  if(e.key==='t'||e.key==='T')tTrails();
+  if(e.key==='r'||e.key==='R')doReset();
+  if(e.key==='m'||e.key==='M')tAudio();
+  if(e.key==='d'||e.key==='D')tDensity();
+  if(e.key==='f'||e.key==='F')goFS();
+  if(e.key==='Escape'){document.getElementById('complete-overlay').classList.remove('show')}
+  if(e.key==='Enter'&&!run){go()}
+  if(e.key==='?'||e.key==='/'){
+    const h=document.getElementById('hints');
+    if(h){
+      h.style.opacity=h.style.opacity==='1'?'.15':'1';
+      h.style.transition='opacity .5s';
+    }
+  }
+  const num=parseInt(e.key);
+  if(num>=1&&num<=6){
+    const era=num-1;tP=(era/6)+.001;curE=era;eP=.001;annEra(era);sR=era===5;
+    msDone.clear();for(const ms of MILESTONES)if(tP>=ms.p)msDone.add(ms.p);
+  }
+});
+document.querySelectorAll('.tm').forEach(m=>{
+  m.addEventListener('click',()=>{
+    const e=parseInt(m.dataset.era);tP=(e/6)+.001;curE=e;eP=.001;annEra(e);sR=e===5;
+    msDone.clear();for(const ms of MILESTONES)if(tP>=ms.p)msDone.add(ms.p);
+  });
+});
+
+// Update intro hint if returning visitor
+try{
+  const prevEra=localStorage.getItem('singularity_max_era');
+  if(prevEra&&parseInt(prevEra)>=3){
+    const hint=document.getElementById('intro-hint');
+    if(hint)hint.textContent='Welcome back \u00b7 Click to attract \u00b7 Double-click to explode \u00b7 Drag to guide';
+  }
+}catch(e){}
+
+// Auto-pause when tab is hidden (saves battery and CPU)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&run&&!paused){tPause();window._autoPaused=true}
+  else if(!document.hidden&&window._autoPaused){tPause();window._autoPaused=false}
+});
+
+// Init milestone dots on timeline
+const mDotsEl=document.getElementById('milestone-dots');
+if(mDotsEl){MILESTONES.forEach(m=>{
+  const dot=document.createElement('span');
+  dot.style.left=(m.p*100)+'%';
+  mDotsEl.appendChild(dot);
+})}
+// Init
+try{resize();initIntro()}catch(e){console.error('Init error:',e)}
+</script>
+</body>
+</html>
