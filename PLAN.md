@@ -1,28 +1,20 @@
-# Singularity Simulator
+# Hacker News Blog Navigator
 
 ## Goal
-An interactive, mesmerizing particle simulation that visualizes the technological singularity — starting from simple particles and evolving through emergent complexity to a beautiful, hypnotic crescendo of intelligence.
+An interactive RSS-style reader that displays the top Hacker News blogs from 2025, letting users filter, search, and discover high-quality tech content sources.
 
 ## Files I'll create
-- index.html - Single-file interactive HTML experience with all CSS/JS inline
-
-## Core Features
-1. Canvas-based particle system (WebGL for performance)
-2. Particles start simple, evolve through phases:
-   - Phase 1: Random noise (pre-life)
-   - Phase 2: Simple attraction/repulsion (chemistry)
-   - Phase 3: Flocking/swarming (biology)
-   - Phase 4: Network formation (neural nets)
-   - Phase 5: Exponential growth (singularity)
-3. Timeline bar at bottom showing progress through eras
-4. Interactive controls: speed, particle count, perturbation button
-5. Beautiful color palette that shifts with each era
-6. Share button for screenshots
+- index.html - Main interactive interface with blog listings, search, filters
+- blogs.json - Data file with top HN blogs (name, URL, description, category)
+- style.css - Clean, readable RSS-reader aesthetic (dark/light mode)
+- README.md - Project description and usage
+- inspiration.md - Link to Karpathy's tweet
 
 ## Steps
-1. Build the base Canvas particle system with physics
-2. Add the era progression system with visual transitions
-3. Add interactive controls
-4. Polish visuals (glow effects, color palettes, typography)
-5. Add timeline and era labels
-6. Iterate on visual quality and interactivity
+1. Create the HTML structure with header, search bar, filters, blog grid
+2. Add sample data from the HN popular blogs list Karpathy linked
+3. Style with clean typography, card-based layout, RSS aesthetic
+4. Add interactivity: search, category filters, sort options
+5. Add theme toggle (dark/light mode)
+6. Add "subscribe" simulation (copy RSS URL to clipboard)
+7. Test and polish

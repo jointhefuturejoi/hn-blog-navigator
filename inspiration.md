@@ -1,11 +1,29 @@
 # Inspiration
 
-**Source Tweet:** https://x.com/elonmusk/status/2018079455873212529
+## Source Tweet
+**Author:** Andrej Karpathy (@karpathy)  
+**URL:** https://x.com/karpathy/status/2018043254986703167  
+**Posted:** February 1, 2026  
 
-**Account:** @elonmusk (200M+ followers, joined 2009, verified)
+## Content
+> "Finding myself going back to RSS/Atom feeds a lot more recently. There's a lot more higher quality longform and a lot less slop intended to provoke."
 
-**Views:** 216,851+
+## Why This Resonated
+Karpathy's observation strikes a chord with many technical readers who are tired of:
+- Algorithm-driven content that prioritizes engagement over quality
+- Clickbait and provocative headlines
+- Short-form content that lacks depth
+- Platform lock-in and content silos
 
-**Topic:** The technological singularity -- the hypothetical point where artificial intelligence surpasses human intelligence and triggers an unprecedented acceleration in technological growth.
+## The Opportunity
+Create a tool that makes it easier to:
+1. Discover high-quality RSS feeds
+2. Organize and categorize them
+3. Quickly subscribe to them in your favorite reader
 
-**Why this inspired the build:** The concept of the singularity is one of the most visually and conceptually compelling topics in technology. The idea of complexity emerging from chaos -- from random particles to molecular bonds to life to consciousness to a networked intelligence and finally to transcendence -- is a natural fit for an interactive particle simulation. Each era represents a phase of this emergence, making the abstract concept tangible and mesmerizing.
+## Source Quality Verification
+- **Views:** 215,735
+- **Account:** @karpathy (1.7M followers, verified)
+- **Account Age:** Joined April 2009
+- **Engagement:** 3,635 likes, 2,823 bookmarks
+- **Assessment:** High-quality, authentic technical voice
