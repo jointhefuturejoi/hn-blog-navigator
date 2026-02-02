@@ -1,20 +1,22 @@
-# Hacker News Blog Navigator
+# Market Momentum Heatmap
 
 ## Goal
-An interactive RSS-style reader that displays the top Hacker News blogs from 2025, letting users filter, search, and discover high-quality tech content sources.
+Build an interactive market momentum visualization that displays stocks as a treemap heatmap, color-coded by momentum metrics (price change, volume surge, relative strength).
+
+## Structure Tier
+Tier 1 — Single HTML file with embedded CSS/JS. Data included as JSON within the file for standalone operation.
 
 ## Files I'll create
-- index.html - Main interactive interface with blog listings, search, filters
-- blogs.json - Data file with top HN blogs (name, URL, description, category)
-- style.css - Clean, readable RSS-reader aesthetic (dark/light mode)
-- README.md - Project description and usage
-- inspiration.md - Link to Karpathy's tweet
+- index.html — Main application with treemap visualization using D3.js
+- README.md — What it does, how to run it
+- inspiration.md — Link to Jeff Sun's tweet
 
 ## Steps
-1. Create the HTML structure with header, search bar, filters, blog grid
-2. Add sample data from the HN popular blogs list Karpathy linked
-3. Style with clean typography, card-based layout, RSS aesthetic
-4. Add interactivity: search, category filters, sort options
-5. Add theme toggle (dark/light mode)
-6. Add "subscribe" simulation (copy RSS URL to clipboard)
-7. Test and polish
+1. Create HTML structure with D3.js CDN
+2. Generate realistic mock stock data (50+ stocks across sectors)
+3. Build treemap layout with d3-hierarchy
+4. Color-code by momentum score (price change %)
+5. Add interactive filters (sector dropdown, timeframe buttons)
+6. Add hover tooltips with stock details
+7. Add click-to-expand detail panel
+8. Polish visual design (dark theme, finance aesthetic)

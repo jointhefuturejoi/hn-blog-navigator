@@ -1,36 +1,61 @@
-# Hacker News Blog Navigator
+# Market Momentum Heatmap
 
-A clean, interactive RSS-style reader for discovering high-quality tech blogs from the Hacker News community.
+An interactive market visualization tool that displays stocks as a treemap heatmap, color-coded by momentum metrics. Built as an overnight project inspired by Jeff Sun's "Hottest Stock" momentum screener concept.
 
 ## Features
 
-- 📊 **25 Curated Blogs** - Hand-picked from the most popular HN blogs of 2025
-- 🔍 **Search & Filter** - Find blogs by name, description, or category
-- 🏷️ **Categories** - Personal, Company, Research, and Newsletter
-- 🌙 **Dark/Light Mode** - Toggle between themes, preference saved locally
-- 📋 **One-Click RSS** - Copy RSS feed URLs to your clipboard
-- 📱 **Responsive** - Works on desktop, tablet, and mobile
+- **Treemap Visualization**: Stocks sized by market cap, colored by momentum
+- **59 Stocks**: Large-cap and growth stocks across 6 sectors
+- **Interactive Search**: Find stocks by symbol or name with "/" keyboard shortcut
+- **Top Movers**: Quick view of top 5 gainers and losers
+- **Detail Panel**: Click any stock for detailed metrics + 30-day sparkline
+- **Multiple Timeframes**: 1D, 1W, 1M momentum views
+- **Sector Filtering**: Focus on specific sectors
+- **Sort Options**: Sort by market cap, momentum, or volume
 
-## How to Use
+## How to Run
 
-1. Open `index.html` in any modern browser
-2. Use the search box to find specific blogs
-3. Filter by category using the dropdown
-4. Toggle dark/light mode with the 🌙/☀️ button
-5. Click "Visit Site →" to open a blog
-6. Click "📋 Copy RSS" to copy the feed URL
+Simply open `index.html` in any modern web browser:
 
-## Categories
+```bash
+open index.html
+```
 
-- **Personal** - Individual writers and thought leaders
-- **Company** - Engineering blogs from tech companies
-- **Research** - Academic and research institutions
-- **Newsletter** - Regular publications and digests
+Or serve with a local server:
 
-## Inspired By
+```bash
+python -m http.server 8000
+# Then visit http://localhost:8000
+```
 
-This tool was inspired by [Andrej Karpathy's tweet](https://x.com/karpathy/status/2018043254986703167) about returning to RSS/Atom feeds for higher quality content, away from algorithm-driven platforms.
+No build step required. All dependencies are loaded via CDN (D3.js).
+
+## Keyboard Shortcuts
+
+- `/` - Focus search box
+- `Esc` - Close detail panel / clear search
+
+## Data
+
+Stock data is simulated for demonstration purposes, including:
+- Price and price changes (1D, 1W, 1M)
+- Volume and volume vs average
+- RSI (14)
+- Market cap
+- Sector classification
+
+## Tech Stack
+
+- Vanilla HTML/CSS/JavaScript
+- D3.js v7 for visualization
+- No build tools or dependencies required
+
+## Browser Support
+
+- Chrome/Edge (latest)
+- Firefox (latest)
+- Safari (latest)
 
 ## License
 
-MIT - Feel free to fork and customize your own blog navigator!
+MIT

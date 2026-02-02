@@ -3,724 +3,1145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hacker News Blog Navigator</title>
+    <title>Market Momentum Heatmap</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        :root {
-            --bg: #0d1117;
-            --bg-secondary: #161b22;
-            --bg-tertiary: #21262d;
-            --text: #c9d1d9;
-            --text-secondary: #8b949e;
-            --border: #30363d;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
-            --success: #238636;
-            --warning: #f0883e;
-            --cat-personal: #a371f7;
-            --cat-company: #3fb950;
-            --cat-research: #f0883e;
-            --cat-newsletter: #79c0ff;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
-        [data-theme="light"] {
-            --bg: #ffffff;
-            --bg-secondary: #f6f8fa;
-            --bg-tertiary: #eaeef2;
-            --text: #24292f;
-            --text-secondary: #57606a;
-            --border: #d0d7de;
-            --accent: #0969da;
-            --accent-hover: #0550ae;
-            --success: #1a7f37;
-            --warning: #cf4a1a;
-            --cat-personal: #8250df;
-            --cat-company: #1a7f37;
-            --cat-research: #cf4a1a;
-            --cat-newsletter: #0969da;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
             min-height: 100vh;
         }
-
-        header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 1.5rem 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
+        
+        .header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #1a1a2e;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
         }
-
-        h1 {
-            font-size: 1.5rem;
+        
+        .header h1 {
+            font-size: 24px;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            background: linear-gradient(135deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-
-        .hn-logo {
-            background: #ff6600;
-            color: white;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
+        
         .controls {
             display: flex;
-            gap: 0.75rem;
+            gap: 15px;
             align-items: center;
-            flex-wrap: wrap;
         }
-
+        
         .search-box {
             position: relative;
         }
-
+        
         .search-box input {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            color: #e0e0e0;
+            padding: 8px 16px 8px 36px;
             border-radius: 6px;
-            padding: 0.5rem 1rem 0.5rem 2.5rem;
-            color: var(--text);
-            font-size: 0.9rem;
+            font-size: 13px;
             width: 200px;
             transition: all 0.2s;
         }
-
+        
         .search-box input:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+            border-color: #00d4ff;
+            width: 250px;
         }
-
+        
         .search-box::before {
             content: "🔍";
             position: absolute;
-            left: 0.75rem;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 0.9rem;
+            font-size: 12px;
+            opacity: 0.5;
         }
-
-        select, button {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 0.5rem 0.75rem;
-            color: var(--text);
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        button:hover, select:hover { background: var(--border); }
-
-        .btn-random {
-            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-            color: white;
-            border: none;
-            font-weight: 500;
-        }
-
-        .btn-random:hover { opacity: 0.9; transform: translateY(-1px); }
-
-        .btn-export {
-            background: var(--success);
-            color: white;
-            border-color: var(--success);
-        }
-
-        .btn-export:hover { opacity: 0.9; }
-
-        .theme-toggle { font-size: 1.1rem; padding: 0.5rem; }
-
-        main {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-
-        .stats-bar {
-            display: flex;
-            gap: 2rem;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            flex-wrap: wrap;
-        }
-
-        .stats-bar span { display: flex; align-items: center; gap: 0.5rem; }
-
-        .category-legend {
-            display: flex;
-            gap: 1rem;
-            margin-left: auto;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: 0.8rem;
-        }
-
-        .legend-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .legend-dot.personal { background: var(--cat-personal); }
-        .legend-dot.company { background: var(--cat-company); }
-        .legend-dot.research { background: var(--cat-research); }
-        .legend-dot.newsletter { background: var(--cat-newsletter); }
-
-        .blog-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1rem;
-        }
-
-        .blog-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.25rem;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .blog-card::before {
-            content: '';
+        
+        .search-dropdown {
             position: absolute;
-            top: 0;
+            top: 100%;
             left: 0;
             right: 0;
-            height: 3px;
-            background: var(--accent);
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            border-radius: 6px;
+            margin-top: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
         }
-
-        .blog-card[data-category="personal"]::before { background: var(--cat-personal); }
-        .blog-card[data-category="company"]::before { background: var(--cat-company); }
-        .blog-card[data-category="research"]::before { background: var(--cat-research); }
-        .blog-card[data-category="newsletter"]::before { background: var(--cat-newsletter); }
-
-        .blog-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        
+        .search-dropdown.active {
+            display: block;
         }
-
-        .blog-card.favorited { border-color: var(--warning); }
-
-        .blog-header {
+        
+        .search-item {
+            padding: 10px 15px;
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
-            align-items: start;
-            margin-bottom: 0.5rem;
+            align-items: center;
+            border-bottom: 1px solid #2a2a3e;
         }
-
-        .blog-title-row {
+        
+        .search-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-item:hover {
+            background: #2a2a3e;
+        }
+        
+        .search-item-symbol {
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .search-item-name {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .search-item-change {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .control-group {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            flex: 1;
+            gap: 8px;
         }
-
-        .blog-name {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--accent);
-            text-decoration: none;
-        }
-
-        .blog-name:hover { color: var(--accent-hover); text-decoration: underline; }
-
-        .favorite-btn {
-            background: none;
-            border: none;
-            padding: 0.2rem;
-            font-size: 1.1rem;
-            cursor: pointer;
-            opacity: 0.4;
-            transition: all 0.2s;
-        }
-
-        .favorite-btn:hover { opacity: 0.7; transform: scale(1.1); }
-        .favorite-btn.active { opacity: 1; }
-        .favorite-btn.active::before { content: "⭐"; }
-        .favorite-btn:not(.active)::before { content: "☆"; }
-
-        .blog-category {
-            padding: 0.2rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.7rem;
+        
+        .control-group label {
+            font-size: 12px;
+            color: #888;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            font-weight: 600;
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
         }
-
-        .blog-card[data-category="personal"] .blog-category { background: rgba(163, 113, 247, 0.15); color: var(--cat-personal); }
-        .blog-card[data-category="company"] .blog-category { background: rgba(63, 185, 80, 0.15); color: var(--cat-company); }
-        .blog-card[data-category="research"] .blog-category { background: rgba(240, 136, 62, 0.15); color: var(--cat-research); }
-        .blog-card[data-category="newsletter"] .blog-category { background: rgba(121, 192, 255, 0.15); color: var(--cat-newsletter); }
-
-        .blog-url {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.75rem;
-            font-family: monospace;
-        }
-
-        .blog-description {
-            font-size: 0.9rem;
-            color: var(--text);
-            line-height: 1.5;
-            margin-bottom: 1rem;
-        }
-
-        .blog-actions { display: flex; gap: 0.5rem; }
-
-        .btn-small {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .btn-primary:hover { background: var(--accent-hover); }
-
-        .no-results {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-secondary);
-        }
-
-        .no-results h3 { color: var(--text); margin-bottom: 0.5rem; }
-
-        footer {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            border-top: 1px solid var(--border);
-            margin-top: 3rem;
-        }
-
-        footer a { color: var(--accent); text-decoration: none; }
-
-        @media (max-width: 768px) {
-            .header-content { flex-direction: column; align-items: stretch; }
-            .search-box input { width: 100%; }
-            .controls { justify-content: center; }
-            .blog-grid { grid-template-columns: 1fr; }
-            .category-legend { display: none; }
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--success);
-            color: white;
-            padding: 0.75rem 1.5rem;
+        
+        select, button {
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            color: #e0e0e0;
+            padding: 8px 16px;
             border-radius: 6px;
-            font-size: 0.9rem;
-            opacity: 0;
-            transform: translateY(1rem);
-            transition: all 0.3s;
-            z-index: 1000;
-        }
-
-        .toast.show { opacity: 1; transform: translateY(0); }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
+            font-size: 13px;
+            cursor: pointer;
             transition: all 0.2s;
         }
-
-        .modal-overlay.show { opacity: 1; visibility: visible; }
-
-        .modal {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            transform: scale(0.9);
-            transition: transform 0.2s;
+        
+        select:hover, button:hover {
+            border-color: #00d4ff;
         }
-
-        .modal-overlay.show .modal { transform: scale(1); }
-
-        .modal h2 { margin-bottom: 1rem; color: var(--accent); }
-        .modal p { color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6; }
-
-        .modal-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-
-        .keyboard-shortcuts {
-            position: fixed;
-            bottom: 2rem;
-            left: 2rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
+        
+        button.active {
+            background: #00d4ff;
+            color: #0a0a0f;
+            border-color: #00d4ff;
+        }
+        
+        .timeframe-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .container {
+            padding: 20px 30px 60px 30px;
+            height: calc(100vh - 80px);
+        }
+        
+        #chart {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .tooltip {
+            position: absolute;
+            padding: 12px;
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid #2a2a3e;
             border-radius: 8px;
-            padding: 1rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+            pointer-events: none;
+            font-size: 13px;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+        
+        .tooltip .symbol {
+            font-weight: 600;
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .tooltip .name {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .tooltip .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .tooltip .metric {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tooltip .metric-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .tooltip .metric-value {
+            font-weight: 600;
+        }
+        
+        .tooltip .metric-value.positive {
+            color: #00d084;
+        }
+        
+        .tooltip .metric-value.negative {
+            color: #ff4757;
+        }
+        
+        .stock-cell {
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .stock-cell:hover {
+            opacity: 0.9;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0.3; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .stock-label {
+            font-size: 11px;
+            fill: #fff;
+            font-weight: 500;
+            pointer-events: none;
+        }
+        
+        .stock-change {
+            font-size: 10px;
+            fill: rgba(255, 255, 255, 0.8);
+            pointer-events: none;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(15, 15, 25, 0.9);
+            border: 1px solid #2a2a3e;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 12px;
+        }
+        
+        .legend-title {
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .legend-gradient {
+            width: 200px;
+            height: 12px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+        }
+        
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 10px;
+        }
+        
+        .detail-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: #0f0f19;
+            border-left: 1px solid #2a2a3e;
+            padding: 30px;
+            transition: right 0.3s ease;
+            z-index: 100;
+            overflow-y: auto;
+        }
+        
+        .detail-panel.open {
+            right: 0;
+        }
+        
+        .detail-panel .close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        .detail-panel .close:hover {
+            color: #fff;
+        }
+        
+        .detail-header {
+            margin-bottom: 30px;
+        }
+        
+        .detail-symbol {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .detail-name {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-price {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .detail-change {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .detail-section {
+            margin-bottom: 25px;
+        }
+        
+        .detail-section h3 {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .detail-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .detail-metric {
+            background: #1a1a2e;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .detail-metric-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .detail-metric-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
             z-index: 50;
         }
-
-        .keyboard-shortcuts kbd {
-            background: var(--bg-tertiary);
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-            font-family: monospace;
-            border: 1px solid var(--border);
+        
+        .overlay.open {
+            opacity: 1;
+            pointer-events: all;
         }
-
-        @media (max-width: 768px) {
-            .keyboard-shortcuts { display: none; }
+        
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .stat-value.positive {
+            color: #00d084;
+        }
+        
+        .stat-value.negative {
+            color: #ff4757;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <h1><span class="hn-logo">HN</span> Blog Navigator</h1>
-            <div class="controls">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Search blogs...">
+    <div class="header">
+        <h1>Market Momentum Heatmap</h1>
+        <div class="controls">
+            <div class="search-box">
+                <input type="text" id="stockSearch" placeholder="Search stocks..." autocomplete="off">
+                <div class="search-dropdown" id="searchDropdown"></div>
+            </div>
+            <div class="control-group">
+                <label>Sector</label>
+                <select id="sectorFilter">
+                    <option value="all">All Sectors</option>
+                    <option value="Technology">Technology</option>
+                    <option value="Healthcare">Healthcare</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Energy">Energy</option>
+                    <option value="Consumer">Consumer</option>
+                    <option value="Industrial">Industrial</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Sort</label>
+                <select id="sortFilter">
+                    <option value="marketCap">Market Cap</option>
+                    <option value="momentum">Momentum</option>
+                    <option value="volume">Volume</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Timeframe</label>
+                <div class="timeframe-buttons">
+                    <button class="timeframe-btn active" data-period="1d">1D</button>
+                    <button class="timeframe-btn" data-period="1w">1W</button>
+                    <button class="timeframe-btn" data-period="1m">1M</button>
                 </div>
-                <select id="categoryFilter">
-                    <option value="all">All Categories</option>
-                    <option value="favorites">⭐ Favorites</option>
-                    <option value="personal">Personal</option>
-                    <option value="company">Company</option>
-                    <option value="research">Research</option>
-                    <option value="newsletter">Newsletter</option>
-                </select>
-                <select id="sortBy">
-                    <option value="name">Sort by Name</option>
-                    <option value="category">Sort by Category</option>
-                </select>
-                <button class="btn-random" id="randomBtn" title="Random blog (press R)">🎲 Surprise Me</button>
-                <button class="btn-export" id="exportBtn" title="Export OPML">📥 OPML</button>
-                <button id="resetBtn" title="Reset filters">↺</button>
-                <button class="theme-toggle" id="themeToggle">🌙</button>
             </div>
         </div>
-    </header>
-
-    <main>
-        <div class="stats-bar">
-            <span>📊 <strong id="blogCount">0</strong> blogs</span>
-            <span>⭐ <strong id="favCount">0</strong> favorites</span>
-            <span>🔥 From Hacker News Popular 2025</span>
-            <div class="category-legend">
-                <span class="legend-item"><span class="legend-dot personal"></span> Personal</span>
-                <span class="legend-item"><span class="legend-dot company"></span> Company</span>
-                <span class="legend-item"><span class="legend-dot research"></span> Research</span>
-                <span class="legend-item"><span class="legend-dot newsletter"></span> Newsletter</span>
-            </div>
-        </div>
-
-        <div class="blog-grid" id="blogGrid"></div>
-        
-        <div class="no-results" id="noResults" style="display: none;">
-            <h3>No blogs found</h3>
-            <p>Try adjusting your search or filters</p>
-        </div>
-    </main>
-
-    <footer>
-        <p>Inspired by <a href="https://x.com/karpathy/status/2018043254986703167" target="_blank">@karpathy's tweet</a> about returning to RSS feeds for quality content</p>
-        <p style="margin-top: 0.5rem;">Data from <a href="https://gist.github.com/" target="_blank">The Most Popular Blogs of Hacker News 2025</a></p>
-    </footer>
-
-    <div class="keyboard-shortcuts">
-        <kbd>?</kbd> Help &nbsp; <kbd>R</kbd> Random &nbsp; <kbd>/</kbd> Search &nbsp; <kbd>F</kbd> Filter &nbsp; <kbd>0</kbd> Reset
     </div>
-
-    <div class="toast" id="toast">Copied to clipboard!</div>
-
-    <div class="modal-overlay" id="randomModal">
-        <div class="modal">
-            <h2 id="randomBlogName">Blog Name</h2>
-            <p id="randomBlogDesc">Description</p>
-            <div class="modal-actions">
-                <a href="#" id="randomBlogLink" class="btn-small btn-primary" target="_blank">Visit Site →</a>
-                <button class="btn-small" id="randomBlogFav">☆ Favorite</button>
-                <button class="btn-small" id="randomBlogRSS">📋 Copy RSS</button>
-                <button class="btn-small" id="anotherRandom">🎲 Another</button>
-                <button class="btn-small" id="closeModal">Close</button>
+    
+    <div class="container">
+        <div class="top-movers" id="topMovers" style="margin-bottom: 20px;">
+            <div style="display: flex; gap: 20px;">
+                <div style="flex: 1;">
+                    <h3 style="font-size: 11px; color: #00d084; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Top Gainers</h3>
+                    <div id="topGainers" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="font-size: 11px; color: #ff4757; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Top Losers</h3>
+                    <div id="topLosers" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                </div>
             </div>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-label">Total Stocks</span>
+                <span class="stat-value" id="totalStocks">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Advancing</span>
+                <span class="stat-value positive" id="advancing">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Declining</span>
+                <span class="stat-value negative" id="declining">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">Avg Momentum</span>
+                <span class="stat-value" id="avgMomentum">0%</span>
+            </div>
+        </div>
+        
+        <div id="chart"></div>
+        
+        <div class="legend">
+            <div class="legend-title">Momentum Score</div>
+            <div class="legend-gradient" id="legendGradient"></div>
+            <div class="legend-labels">
+                <span>-20%</span>
+                <span>0%</span>
+                <span>+20%</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay"></div>
+    
+    <div class="detail-panel" id="detailPanel">
+        <button class="close" id="closePanel">&times;</button>
+        <div class="detail-header">
+            <div class="detail-symbol" id="detailSymbol">AAPL</div>
+            <div class="detail-name" id="detailName">Apple Inc.</div>
+            <div class="detail-price" id="detailPrice">$0.00</div>
+            <div class="detail-change" id="detailChange">+0.00%</div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Key Metrics</h3>
+            <div class="detail-metrics">
+                <div class="detail-metric">
+                    <div class="detail-metric-label">Volume</div>
+                    <div class="detail-metric-value" id="detailVolume">0</div>
+                </div>
+                <div class="detail-metric">
+                    <div class="detail-metric-label">Volume vs Avg</div>
+                    <div class="detail-metric-value" id="detailVolumeAvg">0%</div>
+                </div>
+                <div class="detail-metric">
+                    <div class="detail-metric-label">RSI (14)</div>
+                    <div class="detail-metric-value" id="detailRSI">0</div>
+                </div>
+                <div class="detail-metric">
+                    <div class="detail-metric-label">Market Cap</div>
+                    <div class="detail-metric-value" id="detailMarketCap">$0B</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Price Trend (30D)</h3>
+            <div class="sparkline-container" id="sparklineContainer" style="height: 80px; background: #1a1a2e; border-radius: 8px; padding: 10px;"></div>
+        </div>
+        
+        <div class="detail-section">
+            <h3>Sector Performance</h3>
+            <div class="detail-metrics">
+                <div class="detail-metric">
+                    <div class="detail-metric-label">Sector</div>
+                    <div class="detail-metric-value" id="detailSector">-</div>
+                </div>
+                <div class="detail-metric">
+                    <div class="detail-metric-label">Sector Rank</div>
+                    <div class="detail-metric-value" id="detailRank">#0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+    
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 30px; background: #0a0a0f; border-top: 1px solid #1a1a2e; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #666; z-index: 10;">
+        <div>
+            <span style="color: #888;">Data:</span> Simulated market data for demonstration | 
+            <span style="color: #888;">Last updated:</span> <span id="lastUpdated">-</span>
+        </div>
+        <div style="display: flex; gap: 20px;">
+            <span><kbd style="background: #1a1a2e; padding: 2px 6px; border-radius: 3px; border: 1px solid #2a2a3e;">/</kbd> Search</span>
+            <span><kbd style="background: #1a1a2e; padding: 2px 6px; border-radius: 3px; border: 1px solid #2a2a3e;">Esc</kbd> Close</span>
         </div>
     </div>
 
     <script>
-        const blogs = [
-            { name: "Paul Graham", url: "paulgraham.com", rss: "http://paulgraham.com/rss.html", description: "Essays on startups, programming, and life from the co-founder of Y Combinator.", category: "personal" },
-            { name: "Dan Luu", url: "danluu.com", rss: "https://danluu.com/atom.xml", description: "In-depth technical writing on systems, performance, and software engineering.", category: "personal" },
-            { name: "Julia Evans", url: "jvns.ca", rss: "https://jvns.ca/atom.xml", description: "Friendly, accessible explanations of programming concepts and systems.", category: "personal" },
-            { name: "Simon Willison", url: "simonwillison.net", rss: "https://simonwillison.net/atom.xml", description: "Explorations in AI, LLMs, web development, and data journalism.", category: "personal" },
-            { name: "Ben Horowitz", url: "a16z.com/author/ben-horowitz", rss: "https://a16z.com/feed/", description: "Leadership lessons and startup wisdom from the co-founder of Andreessen Horowitz.", category: "company" },
-            { name: "Daring Fireball", url: "daringfireball.net", rss: "https://daringfireball.net/feeds/main", description: "John Gruber's weblog on Apple, tech, and design since 2002.", category: "personal" },
-            { name: "Stratechery", url: "stratechery.com", rss: "https://stratechery.com/feed/", description: "Ben Thompson's analysis of the strategy and business side of technology.", category: "newsletter" },
-            { name: "Schneier on Security", url: "schneier.com", rss: "https://www.schneier.com/blog/atom.xml", description: "Security guru Bruce Schneier's thoughts on security, privacy, and technology.", category: "personal" },
-            { name: "Netflix Tech Blog", url: "netflixtechblog.com", rss: "https://netflixtechblog.com/feed", description: "Engineering stories from the team behind the world's largest streaming service.", category: "company" },
-            { name: "Cloudflare Blog", url: "blog.cloudflare.com", rss: "https://blog.cloudflare.com/rss/", description: "Deep dives into networking, security, and internet infrastructure.", category: "company" },
-            { name: "Stripe Blog", url: "stripe.com/blog", rss: "https://stripe.com/blog/rss.xml", description: "Engineering and product insights from the payments infrastructure company.", category: "company" },
-            { name: "Engineering at Meta", url: "engineering.fb.com", rss: "https://engineering.fb.com/feed/", description: "Large-scale systems, AI research, and engineering culture at Meta.", category: "company" },
-            { name: "Google Research", url: "research.google", rss: "https://research.google/feeds/posts.xml", description: "Latest breakthroughs in AI, ML, and computer science from Google Research.", category: "research" },
-            { name: "OpenAI Blog", url: "openai.com/blog", rss: "https://openai.com/blog/rss.xml", description: "Research and product announcements from the leading AI lab.", category: "company" },
-            { name: "Distill.pub", url: "distill.pub", rss: "https://distill.pub/rss.xml", description: "Clear explanations of machine learning research with interactive visualizations.", category: "research" },
-            { name: "Patrick Collison", url: "patrickcollison.com", rss: "https://patrickcollison.com/rss.xml", description: "Quick links and thoughts from the CEO of Stripe.", category: "personal" },
-            { name: "Sam Altman", url: "blog.samaltman.com", rss: "https://blog.samaltman.com/posts.atom", description: "Startup advice, technology trends, and the future of AI.", category: "personal" },
-            { name: "Andrej Karpathy", url: "karpathy.ai", rss: "https://karpathy.ai/rss.xml", description: "Deep learning, AI, and software engineering from former Tesla AI Director.", category: "personal" },
-            { name: "Uber Engineering", url: "uber.com/blog/engineering", rss: "https://www.uber.com/blog/engineering/rss.xml", description: "Building scalable systems for ride-sharing and delivery at global scale.", category: "company" },
-            { name: "LWN.net", url: "lwn.net", rss: "https://lwn.net/headlines/rss", description: "Weekly coverage of Linux, open source, and free software development.", category: "newsletter" },
-            { name: "Morning Paper", url: "blog.acolyer.org", rss: "https://blog.acolyer.org/feed/", description: "Adrian Colyer's readable summaries of computer science research papers.", category: "research" },
-            { name: "High Scalability", url: "highscalability.com", rss: "https://highscalability.com/feed/", description: "Stories about how the biggest tech companies scale their systems.", category: "newsletter" },
-            { name: "Berkshire Hathaway Letters", url: "berkshirehathaway.com/letters.html", rss: null, description: "Annual letters from Warren Buffett - business wisdom spanning decades.", category: "newsletter" },
-            { name: "Eli Bendersky", url: "eli.thegreenplace.net", rss: "https://eli.thegreenplace.net/feeds/all.atom.xml", description: "Deep technical articles on programming languages, compilers, and tools.", category: "personal" },
-            { name: "Rachel by the Bay", url: "rachelbythebay.com", rss: "https://rachelbythebay.com/w/atom.xml", description: "Tales of engineering, reliability, and the quirks of software systems.", category: "personal" },
-            { name: "Two-Bit History", url: "twobithistory.org", rss: "https://twobithistory.org/feed.xml", description: "Long-form articles on the history of software and computing.", category: "personal" },
-            { name: "Armin Ronacher", url: "lucumr.pocoo.org", rss: "https://lucumr.pocoo.org/feed.atom", description: "Thoughts on Python, Rust, and software craftsmanship from the creator of Flask.", category: "personal" },
-            { name: "Microsoft Research", url: "microsoft.com/en-us/research/blog", rss: "https://www.microsoft.com/en-us/research/feed/", description: "Cutting-edge research in AI, systems, and human-computer interaction.", category: "research" },
-            { name: "DeepMind Blog", url: "deepmind.google", rss: null, description: "AI research breakthroughs and their applications to real-world problems.", category: "research" },
-            { name: "Anthropic Blog", url: "anthropic.com/news", rss: null, description: "Research on AI safety and the development of Claude.", category: "company" },
-            { name: "Linear Blog", url: "linear.app/blog", rss: "https://linear.app/rss.xml", description: "Thoughtful product development and engineering culture from the issue tracking startup.", category: "company" },
-            { name: "Tailwind CSS Blog", url: "tailwindcss.com/blog", rss: "https://tailwindcss.com/feed.xml", description: "Design system insights and modern CSS techniques.", category: "company" },
-            { name: "Khan Academy Engineering", url: "engineering.khanacademy.org", rss: "https://engineering.khanacademy.org/rss.xml", description: "Building educational software that reaches millions of learners.", category: "company" },
-            { name: "Pragmatic Engineer", url: "blog.pragmaticengineer.com", rss: "https://blog.pragmaticengineer.com/feed/", description: "Gergely Orosz's in-depth analysis of engineering culture and Big Tech practices.", category: "newsletter" }
+        // Stock data
+        const stockData = [
+            { symbol: "AAPL", name: "Apple Inc.", sector: "Technology", price: 195.89, change1d: 2.34, change1w: 5.67, change1m: 12.45, volume: 45200000, volumeAvg: 38000000, marketCap: 3000, rsi: 68 },
+            { symbol: "MSFT", name: "Microsoft Corp.", sector: "Technology", price: 420.55, change1d: 1.23, change1w: 3.45, change1m: 8.90, volume: 28000000, volumeAvg: 25000000, marketCap: 3100, rsi: 62 },
+            { symbol: "GOOGL", name: "Alphabet Inc.", sector: "Technology", price: 175.98, change1d: -0.45, change1w: 2.34, change1m: 15.67, volume: 22000000, volumeAvg: 20000000, marketCap: 2200, rsi: 71 },
+            { symbol: "AMZN", name: "Amazon.com Inc.", sector: "Consumer", price: 178.35, change1d: 3.45, change1w: 7.89, change1m: 22.34, volume: 38000000, volumeAvg: 32000000, marketCap: 1850, rsi: 78 },
+            { symbol: "NVDA", name: "NVIDIA Corp.", sector: "Technology", price: 875.28, change1d: 5.67, change1w: 12.34, change1m: 34.56, volume: 52000000, volumeAvg: 45000000, marketCap: 2150, rsi: 85 },
+            { symbol: "META", name: "Meta Platforms", sector: "Technology", price: 505.68, change1d: -1.23, change1w: -3.45, change1m: 8.90, volume: 18000000, volumeAvg: 22000000, marketCap: 1300, rsi: 55 },
+            { symbol: "TSLA", name: "Tesla Inc.", sector: "Consumer", price: 248.50, change1d: -3.45, change1w: -8.90, change1m: -15.67, volume: 98000000, volumeAvg: 85000000, marketCap: 790, rsi: 42 },
+            { symbol: "JPM", name: "JPMorgan Chase", sector: "Finance", price: 195.42, change1d: 0.67, change1w: 1.23, change1m: 4.56, volume: 12000000, volumeAvg: 11000000, marketCap: 560, rsi: 58 },
+            { symbol: "JNJ", name: "Johnson & Johnson", sector: "Healthcare", price: 162.35, change1d: -0.23, change1w: -1.11, change1m: 2.34, volume: 8000000, volumeAvg: 9000000, marketCap: 390, rsi: 52 },
+            { symbol: "V", name: "Visa Inc.", sector: "Finance", price: 285.67, change1d: 1.45, change1w: 3.21, change1m: 6.78, volume: 6500000, volumeAvg: 6000000, marketCap: 620, rsi: 65 },
+            { symbol: "UNH", name: "UnitedHealth Group", sector: "Healthcare", price: 520.89, change1d: 0.89, change1w: 2.34, change1m: 5.67, volume: 4500000, volumeAvg: 4800000, marketCap: 480, rsi: 61 },
+            { symbol: "XOM", name: "Exxon Mobil", sector: "Energy", price: 115.23, change1d: -0.78, change1w: -2.34, change1m: -5.67, volume: 15000000, volumeAvg: 14000000, marketCap: 460, rsi: 45 },
+            { symbol: "CVX", name: "Chevron Corp.", sector: "Energy", price: 145.67, change1d: 0.34, change1w: -1.23, change1m: -3.45, volume: 8000000, volumeAvg: 8500000, marketCap: 280, rsi: 48 },
+            { symbol: "PG", name: "Procter & Gamble", sector: "Consumer", price: 168.90, change1d: 0.12, change1w: 0.89, change1m: 3.45, volume: 7000000, volumeAvg: 7200000, marketCap: 400, rsi: 56 },
+            { symbol: "HD", name: "Home Depot", sector: "Consumer", price: 365.45, change1d: -0.56, change1w: 1.23, change1m: 4.56, volume: 4000000, volumeAvg: 4200000, marketCap: 360, rsi: 59 },
+            { symbol: "MA", name: "Mastercard Inc.", sector: "Finance", price: 475.23, change1d: 1.12, change1w: 2.78, change1m: 7.89, volume: 3500000, volumeAvg: 3200000, marketCap: 450, rsi: 67 },
+            { symbol: "BAC", name: "Bank of America", sector: "Finance", price: 37.89, change1d: 1.89, change1w: 4.56, change1m: 11.23, volume: 35000000, volumeAvg: 30000000, marketCap: 295, rsi: 72 },
+            { symbol: "ABBV", name: "AbbVie Inc.", sector: "Healthcare", price: 178.34, change1d: -0.34, change1w: 0.67, change1m: 1.89, volume: 5500000, volumeAvg: 5800000, marketCap: 315, rsi: 54 },
+            { symbol: "PFE", name: "Pfizer Inc.", sector: "Healthcare", price: 28.90, change1d: -1.23, change1w: -3.45, change1m: -8.90, volume: 28000000, volumeAvg: 25000000, marketCap: 160, rsi: 38 },
+            { symbol: "KO", name: "Coca-Cola Co.", sector: "Consumer", price: 62.45, change1d: 0.23, change1w: 0.78, change1m: 2.34, volume: 12000000, volumeAvg: 11500000, marketCap: 270, rsi: 55 },
+            { symbol: "PEP", name: "PepsiCo Inc.", sector: "Consumer", price: 178.90, change1d: -0.45, change1w: 0.34, change1m: 1.23, volume: 5000000, volumeAvg: 5200000, marketCap: 245, rsi: 53 },
+            { symbol: "WMT", name: "Walmart Inc.", sector: "Consumer", price: 175.23, change1d: 0.78, change1w: 2.34, change1m: 6.78, volume: 6500000, volumeAvg: 6000000, marketCap: 470, rsi: 64 },
+            { symbol: "MRK", name: "Merck & Co.", sector: "Healthcare", price: 125.67, change1d: 0.56, change1w: 1.89, change1m: 4.56, volume: 8000000, volumeAvg: 7800000, marketCap: 320, rsi: 60 },
+            { symbol: "TMO", name: "Thermo Fisher", sector: "Healthcare", price: 545.78, change1d: -1.11, change1w: -2.22, change1m: 1.11, volume: 1800000, volumeAvg: 2000000, marketCap: 210, rsi: 51 },
+            { symbol: "CSCO", name: "Cisco Systems", sector: "Technology", price: 52.34, change1d: 0.34, change1w: 1.23, change1m: 3.45, volume: 18000000, volumeAvg: 17000000, marketCap: 210, rsi: 57 },
+            { symbol: "DIS", name: "Walt Disney", sector: "Consumer", price: 112.45, change1d: 2.34, change1w: 5.67, change1m: 12.34, volume: 12000000, volumeAvg: 11000000, marketCap: 205, rsi: 69 },
+            { symbol: "ABT", name: "Abbott Labs", sector: "Healthcare", price: 118.90, change1d: 0.12, change1w: 0.89, change1m: 2.78, volume: 4500000, volumeAvg: 4800000, marketCap: 205, rsi: 56 },
+            { symbol: "VZ", name: "Verizon", sector: "Technology", price: 42.78, change1d: -0.67, change1w: -1.89, change1m: -4.56, volume: 18000000, volumeAvg: 16000000, marketCap: 180, rsi: 43 },
+            { symbol: "NKE", name: "Nike Inc.", sector: "Consumer", price: 102.34, change1d: 3.45, change1w: 8.90, change1m: 15.67, volume: 14000000, volumeAvg: 12000000, marketCap: 155, rsi: 74 },
+            { symbol: "RTX", name: "RTX Corp.", sector: "Industrial", price: 85.67, change1d: 0.45, change1w: 1.23, change1m: 3.45, volume: 5500000, volumeAvg: 5200000, marketCap: 115, rsi: 58 },
+            { symbol: "HON", name: "Honeywell", sector: "Industrial", price: 205.34, change1d: -0.23, change1w: 0.67, change1m: 2.34, volume: 3500000, volumeAvg: 3800000, marketCap: 135, rsi: 55 },
+            { symbol: "IBM", name: "IBM Corp.", sector: "Technology", price: 195.67, change1d: 1.23, change1w: 3.45, change1m: 8.90, volume: 4500000, volumeAvg: 4200000, marketCap: 180, rsi: 66 },
+            { symbol: "GE", name: "GE Aerospace", sector: "Industrial", price: 158.90, change1d: 2.34, change1w: 5.67, change1m: 14.56, volume: 6500000, volumeAvg: 5800000, marketCap: 175, rsi: 73 },
+            { symbol: "CAT", name: "Caterpillar Inc.", sector: "Industrial", price: 335.45, change1d: -0.89, change1w: -2.34, change1m: -5.67, volume: 2800000, volumeAvg: 3200000, marketCap: 175, rsi: 46 },
+            { symbol: "BA", name: "Boeing Co.", sector: "Industrial", price: 178.90, change1d: -2.34, change1w: -5.67, change1m: -11.23, volume: 8000000, volumeAvg: 7500000, marketCap: 135, rsi: 41 },
+            { symbol: "AMGN", name: "Amgen Inc.", sector: "Healthcare", price: 298.45, change1d: 0.67, change1w: 1.89, change1m: 5.67, volume: 2200000, volumeAvg: 2500000, marketCap: 160, rsi: 62 },
+            { symbol: "UPS", name: "UPS Inc.", sector: "Industrial", price: 145.23, change1d: -0.45, change1w: -1.23, change1m: -2.34, volume: 3500000, volumeAvg: 3800000, marketCap: 125, rsi: 49 },
+            { symbol: "C", name: "Citigroup Inc.", sector: "Finance", price: 67.89, change1d: 2.78, change1w: 6.67, change1m: 15.56, volume: 18000000, volumeAvg: 15000000, marketCap: 130, rsi: 75 },
+            { symbol: "WFC", name: "Wells Fargo", sector: "Finance", price: 58.45, change1d: 1.56, change1w: 4.23, change1m: 10.89, volume: 16000000, volumeAvg: 14000000, marketCap: 210, rsi: 70 },
+            { symbol: "MMM", name: "3M Company", sector: "Industrial", price: 135.67, change1d: -1.11, change1w: -2.78, change1m: -6.67, volume: 3200000, volumeAvg: 3500000, marketCap: 75, rsi: 44 },
+            { symbol: "GS", name: "Goldman Sachs", sector: "Finance", price: 485.23, change1d: 2.11, change1w: 4.89, change1m: 11.23, volume: 2200000, volumeAvg: 2000000, marketCap: 155, rsi: 68 },
+            { symbol: "MS", name: "Morgan Stanley", sector: "Finance", price: 98.45, change1d: 1.89, change1w: 4.56, change1m: 9.78, volume: 8500000, volumeAvg: 7800000, marketCap: 160, rsi: 67 },
+            { symbol: "BLK", name: "BlackRock Inc.", sector: "Finance", price: 875.67, change1d: 1.34, change1w: 3.23, change1m: 7.89, volume: 1200000, volumeAvg: 1100000, marketCap: 130, rsi: 64 },
+            { symbol: "AXP", name: "American Express", sector: "Finance", price: 245.78, change1d: 0.89, change1w: 2.34, change1m: 6.67, volume: 2800000, volumeAvg: 2600000, marketCap: 175, rsi: 63 },
+            { symbol: "CRM", name: "Salesforce Inc.", sector: "Technology", price: 278.45, change1d: 3.23, change1w: 6.78, change1m: 14.56, volume: 6800000, volumeAvg: 6200000, marketCap: 270, rsi: 76 },
+            { symbol: "ADBE", name: "Adobe Inc.", sector: "Technology", price: 562.34, change1d: -0.67, change1w: 1.23, change1m: 5.67, volume: 2200000, volumeAvg: 2400000, marketCap: 255, rsi: 58 },
+            { symbol: "PYPL", name: "PayPal Holdings", sector: "Finance", price: 68.90, change1d: 4.56, change1w: 9.12, change1m: 18.90, volume: 12000000, volumeAvg: 10500000, marketCap: 72, rsi: 78 },
+            { symbol: "UBER", name: "Uber Technologies", sector: "Technology", price: 72.34, change1d: 2.34, change1w: 7.89, change1m: 22.45, volume: 18500000, volumeAvg: 16000000, marketCap: 148, rsi: 81 },
+            { symbol: "LYFT", name: "Lyft Inc.", sector: "Technology", price: 14.56, change1d: -1.23, change1w: -4.56, change1m: -12.34, volume: 8500000, volumeAvg: 7200000, marketCap: 5.8, rsi: 35 },
+            { symbol: "SHOP", name: "Shopify Inc.", sector: "Technology", price: 89.45, change1d: 5.67, change1w: 12.34, change1m: 28.90, volume: 14200000, volumeAvg: 11800000, marketCap: 115, rsi: 84 },
+            { symbol: "SQ", name: "Block Inc.", sector: "Finance", price: 78.90, change1d: 3.45, change1w: 8.23, change1m: 19.56, volume: 9800000, volumeAvg: 8500000, marketCap: 48, rsi: 77 },
+            { symbol: "ZM", name: "Zoom Video", sector: "Technology", price: 67.23, change1d: -0.89, change1w: -2.34, change1m: -5.67, volume: 4200000, volumeAvg: 4500000, marketCap: 20, rsi: 42 },
+            { symbol: "ROKU", name: "Roku Inc.", sector: "Technology", price: 85.67, change1d: 6.78, change1w: 15.67, change1m: 32.45, volume: 7800000, volumeAvg: 6500000, marketCap: 12, rsi: 87 },
+            { symbol: "COIN", name: "Coinbase Global", sector: "Finance", price: 145.23, change1d: 8.90, change1w: 22.34, change1m: 45.67, volume: 15200000, volumeAvg: 12800000, marketCap: 35, rsi: 92 },
+            { symbol: "HOOD", name: "Robinhood", sector: "Finance", price: 18.45, change1d: 4.23, change1w: 11.23, change1m: 28.90, volume: 11200000, volumeAvg: 9500000, marketCap: 16, rsi: 82 },
+            { symbol: "PLTR", name: "Palantir Tech", sector: "Technology", price: 67.89, change1d: 7.89, change1w: 18.90, change1m: 42.34, volume: 82000000, volumeAvg: 68000000, marketCap: 145, rsi: 91 },
+            { symbol: "SNOW", name: "Snowflake Inc.", sector: "Technology", price: 156.78, change1d: 2.34, change1w: 5.67, change1m: 12.34, volume: 5200000, volumeAvg: 4800000, marketCap: 52, rsi: 68 },
+            { symbol: "NET", name: "Cloudflare", sector: "Technology", price: 92.34, change1d: 4.56, change1w: 12.34, change1m: 28.90, volume: 6800000, volumeAvg: 5800000, marketCap: 31, rsi: 79 },
+            { symbol: "CRWD", name: "CrowdStrike", sector: "Technology", price: 312.45, change1d: 3.78, change1w: 9.45, change1m: 21.23, volume: 3800000, volumeAvg: 3200000, marketCap: 75, rsi: 74 }
         ];
 
-        let favorites = JSON.parse(localStorage.getItem('hnBlogFavorites') || '[]');
-        let currentFilter = 'all', currentSearch = '', currentSort = 'name';
-        let currentRandomBlog = null;
-
-        function saveFavorites() {
-            localStorage.setItem('hnBlogFavorites', JSON.stringify(favorites));
-            document.getElementById('favCount').textContent = favorites.length;
+        let currentPeriod = '1d';
+        let currentSector = 'all';
+        
+        const tooltip = d3.select("#tooltip");
+        const detailPanel = document.getElementById('detailPanel');
+        const overlay = document.getElementById('overlay');
+        
+        // Color scale - more vibrant
+        const colorScale = d3.scaleLinear()
+            .domain([-20, -5, 0, 5, 20])
+            .range(["#ff2d55", "#ff6b6b", "#1a1a2e", "#00d084", "#00b894"]);
+        
+        // Initialize legend gradient
+        const gradient = d3.select("#legendGradient");
+        gradient.style("background", "linear-gradient(to right, #ff4757, #2a2a3e, #00d084)");
+        
+        function getChange(stock, period) {
+            return stock[`change${period}`];
         }
-
-        function toggleFavorite(blogName) {
-            const idx = favorites.indexOf(blogName);
-            if (idx > -1) favorites.splice(idx, 1);
-            else favorites.push(blogName);
-            saveFavorites();
-            renderBlogs();
-            return idx === -1;
-        }
-
-        function isFavorited(blogName) {
-            return favorites.includes(blogName);
-        }
-
-        function renderBlogs() {
-            const grid = document.getElementById('blogGrid');
-            const noResults = document.getElementById('noResults');
+        
+        function updateStats(data, period) {
+            const total = data.length;
+            const advancing = data.filter(d => getChange(d, period) > 0).length;
+            const declining = data.filter(d => getChange(d, period) < 0).length;
+            const avgChange = d3.mean(data, d => getChange(d, period));
             
-            let filtered = blogs.filter(blog => {
-                const matchesCategory = currentFilter === 'all' ? true :
-                    currentFilter === 'favorites' ? isFavorited(blog.name) :
-                    blog.category === currentFilter;
-                const matchesSearch = !currentSearch || 
-                    blog.name.toLowerCase().includes(currentSearch.toLowerCase()) ||
-                    blog.description.toLowerCase().includes(currentSearch.toLowerCase());
-                return matchesCategory && matchesSearch;
+            document.getElementById('totalStocks').textContent = total;
+            document.getElementById('advancing').textContent = advancing;
+            document.getElementById('declining').textContent = declining;
+            
+            const avgEl = document.getElementById('avgMomentum');
+            avgEl.textContent = (avgChange >= 0 ? '+' : '') + avgChange.toFixed(2) + '%';
+            avgEl.className = 'stat-value ' + (avgChange >= 0 ? 'positive' : 'negative');
+            
+            // Update top movers
+            updateTopMovers(data, period);
+        }
+        
+        function updateTopMovers(data, period) {
+            const sorted = [...data].sort((a, b) => getChange(b, period) - getChange(a, period));
+            const gainers = sorted.slice(0, 5);
+            const losers = sorted.slice(-5).reverse();
+            
+            const gainersHtml = gainers.map(stock => {
+                const change = getChange(stock, period);
+                return `
+                    <div class="mover-item" data-symbol="${stock.symbol}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #1a1a2e; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600; font-size: 13px;">${stock.symbol}</span>
+                            <span style="font-size: 11px; color: #888;">${stock.name.split(' ')[0]}</span>
+                        </div>
+                        <span style="color: #00d084; font-weight: 600; font-size: 13px;">+${change.toFixed(1)}%</span>
+                    </div>
+                `;
+            }).join('');
+            
+            const losersHtml = losers.map(stock => {
+                const change = getChange(stock, period);
+                return `
+                    <div class="mover-item" data-symbol="${stock.symbol}" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #1a1a2e; border-radius: 6px; cursor: pointer; transition: background 0.2s;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 600; font-size: 13px;">${stock.symbol}</span>
+                            <span style="font-size: 11px; color: #888;">${stock.name.split(' ')[0]}</span>
+                        </div>
+                        <span style="color: #ff4757; font-weight: 600; font-size: 13px;">${change.toFixed(1)}%</span>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('topGainers').innerHTML = gainersHtml;
+            document.getElementById('topLosers').innerHTML = losersHtml;
+            
+            // Add click handlers
+            document.querySelectorAll('.mover-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const symbol = this.dataset.symbol;
+                    const stock = stockData.find(s => s.symbol === symbol);
+                    if (stock) showDetail(stock);
+                });
+                item.addEventListener('mouseenter', function() {
+                    this.style.background = '#2a2a3e';
+                });
+                item.addEventListener('mouseleave', function() {
+                    this.style.background = '#1a1a2e';
+                });
             });
-
-            if (currentSort === 'name') filtered.sort((a, b) => a.name.localeCompare(b.name));
-            else if (currentSort === 'category') filtered.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
-
-            document.getElementById('blogCount').textContent = filtered.length;
-            document.getElementById('favCount').textContent = favorites.length;
-
-            if (filtered.length === 0) {
-                grid.style.display = 'none';
-                noResults.style.display = 'block';
-                noResults.innerHTML = currentFilter === 'favorites' ? 
-                    '<h3>No favorites yet</h3><p>Click the ☆ on any blog to add it to your favorites</p>' :
-                    '<h3>No blogs found</h3><p>Try adjusting your search or filters</p>';
+        }
+        
+        let currentSort = 'marketCap';
+        
+        function renderChart() {
+            const container = document.getElementById('chart');
+            container.innerHTML = '';
+            
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            let filteredData = stockData;
+            if (currentSector !== 'all') {
+                filteredData = stockData.filter(d => d.sector === currentSector);
+            }
+            
+            // Sort data based on current sort
+            if (currentSort === 'momentum') {
+                filteredData = [...filteredData].sort((a, b) => 
+                    Math.abs(getChange(b, currentPeriod)) - Math.abs(getChange(a, currentPeriod))
+                );
+            } else if (currentSort === 'volume') {
+                filteredData = [...filteredData].sort((a, b) => b.volume - a.volume);
+            }
+            
+            updateStats(filteredData, currentPeriod);
+            
+            const svg = d3.select("#chart")
+                .append("svg")
+                .attr("class", "fade-in")
+                .attr("width", width)
+                .attr("height", height)
+                .style("opacity", "1");
+            
+            // Prepare data for treemap
+            const root = d3.hierarchy({ children: filteredData })
+                .sum(d => d.marketCap)
+                .sort((a, b) => b.marketCap - a.marketCap);
+            
+            d3.treemap()
+                .size([width, height])
+                .padding(2)
+                .round(true)
+                (root);
+            
+            const cell = svg.selectAll("g")
+                .data(root.leaves())
+                .enter().append("g")
+                .attr("transform", d => `translate(${d.x0},${d.y0})`);
+            
+            cell.append("rect")
+                .attr("class", "stock-cell")
+                .attr("id", d => `stock-${d.data.symbol}`)
+                .attr("width", d => d.x1 - d.x0)
+                .attr("height", d => d.y1 - d.y0)
+                .attr("fill", d => {
+                    if (highlightedStock && d.data.symbol === highlightedStock) {
+                        return "#00d4ff";
+                    }
+                    return colorScale(getChange(d.data, currentPeriod));
+                })
+                .attr("stroke", d => {
+                    if (highlightedStock && d.data.symbol === highlightedStock) {
+                        return "#fff";
+                    }
+                    return "none";
+                })
+                .attr("stroke-width", d => {
+                    if (highlightedStock && d.data.symbol === highlightedStock) {
+                        return 3;
+                    }
+                    return 0;
+                })
+                .attr("rx", 4)
+                .on("mouseover", function(event, d) {
+                    const change = getChange(d.data, currentPeriod);
+                    tooltip.style("display", "block")
+                        .html(`
+                            <div class="symbol">${d.data.symbol}</div>
+                            <div class="name">${d.data.name}</div>
+                            <div class="metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Change</span>
+                                    <span class="metric-value ${change >= 0 ? 'positive' : 'negative'}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Price</span>
+                                    <span class="metric-value">$${d.data.price.toFixed(2)}</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Volume</span>
+                                    <span class="metric-value">${(d.data.volume / 1000000).toFixed(1)}M</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Sector</span>
+                                    <span class="metric-value">${d.data.sector}</span>
+                                </div>
+                            </div>
+                        `);
+                })
+                .on("mousemove", function(event) {
+                    tooltip.style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY + 10) + "px");
+                })
+                .on("mouseout", function() {
+                    tooltip.style("display", "none");
+                })
+                .on("click", function(event, d) {
+                    showDetail(d.data);
+                });
+            
+            // Add labels for larger cells
+            cell.filter(d => (d.x1 - d.x0) > 50 && (d.y1 - d.y0) > 40)
+                .append("text")
+                .attr("class", "stock-label")
+                .attr("x", 8)
+                .attr("y", 18)
+                .text(d => d.data.symbol);
+            
+            cell.filter(d => (d.x1 - d.x0) > 50 && (d.y1 - d.y0) > 55)
+                .append("text")
+                .attr("class", "stock-change")
+                .attr("x", 8)
+                .attr("y", 32)
+                .text(d => {
+                    const change = getChange(d.data, currentPeriod);
+                    return (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+                });
+        }
+        
+        function generateSparklineData(stock, days = 30) {
+            const data = [];
+            let price = stock.price / (1 + stock.change1m / 100); // Start price 30 days ago
+            const volatility = 0.02; // 2% daily volatility
+            
+            for (let i = 0; i < days; i++) {
+                const change = (Math.random() - 0.48) * volatility; // Slight upward bias
+                price = price * (1 + change);
+                data.push({ day: i, price: price });
+            }
+            // Ensure final price matches current price
+            data[data.length - 1].price = stock.price;
+            return data;
+        }
+        
+        function renderSparkline(stock) {
+            const container = document.getElementById('sparklineContainer');
+            container.innerHTML = '';
+            
+            const data = generateSparklineData(stock);
+            const width = container.clientWidth - 20;
+            const height = container.clientHeight - 20;
+            
+            const svg = d3.select('#sparklineContainer')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const xScale = d3.scaleLinear()
+                .domain([0, data.length - 1])
+                .range([0, width]);
+            
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(data, d => d.price))
+                .range([height, 0]);
+            
+            const line = d3.line()
+                .x(d => xScale(d.day))
+                .y(d => yScale(d.price))
+                .curve(d3.curveMonotoneX);
+            
+            const change = getChange(stock, currentPeriod);
+            const lineColor = change >= 0 ? '#00d084' : '#ff4757';
+            
+            // Add gradient area
+            const area = d3.area()
+                .x(d => xScale(d.day))
+                .y0(height)
+                .y1(d => yScale(d.price))
+                .curve(d3.curveMonotoneX);
+            
+            const gradient = svg.append('defs')
+                .append('linearGradient')
+                .attr('id', 'sparklineGradient')
+                .attr('x1', '0%')
+                .attr('y1', '0%')
+                .attr('x2', '0%')
+                .attr('y2', '100%');
+            
+            gradient.append('stop')
+                .attr('offset', '0%')
+                .attr('stop-color', lineColor)
+                .attr('stop-opacity', 0.3);
+            
+            gradient.append('stop')
+                .attr('offset', '100%')
+                .attr('stop-color', lineColor)
+                .attr('stop-opacity', 0);
+            
+            svg.append('path')
+                .datum(data)
+                .attr('fill', 'url(#sparklineGradient)')
+                .attr('d', area);
+            
+            svg.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', lineColor)
+                .attr('stroke-width', 2)
+                .attr('d', line);
+            
+            // Add final price dot
+            svg.append('circle')
+                .attr('cx', xScale(data.length - 1))
+                .attr('cy', yScale(data[data.length - 1].price))
+                .attr('r', 4)
+                .attr('fill', lineColor);
+        }
+        
+        function showDetail(stock) {
+            const change = getChange(stock, currentPeriod);
+            
+            document.getElementById('detailSymbol').textContent = stock.symbol;
+            document.getElementById('detailName').textContent = stock.name;
+            document.getElementById('detailPrice').textContent = '$' + stock.price.toFixed(2);
+            
+            const changeEl = document.getElementById('detailChange');
+            changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+            changeEl.style.color = change >= 0 ? '#00d084' : '#ff4757';
+            
+            document.getElementById('detailVolume').textContent = (stock.volume / 1000000).toFixed(1) + 'M';
+            
+            const volAvg = ((stock.volume / stock.volumeAvg - 1) * 100);
+            const volAvgEl = document.getElementById('detailVolumeAvg');
+            volAvgEl.textContent = (volAvg >= 0 ? '+' : '') + volAvg.toFixed(0) + '%';
+            volAvgEl.style.color = volAvg >= 0 ? '#00d084' : '#ff4757';
+            
+            document.getElementById('detailRSI').textContent = stock.rsi;
+            document.getElementById('detailMarketCap').textContent = '$' + stock.marketCap + 'B';
+            document.getElementById('detailSector').textContent = stock.sector;
+            
+            // Calculate sector rank
+            const sectorStocks = stockData.filter(s => s.sector === stock.sector);
+            sectorStocks.sort((a, b) => getChange(b, currentPeriod) - getChange(a, currentPeriod));
+            const rank = sectorStocks.findIndex(s => s.symbol === stock.symbol) + 1;
+            document.getElementById('detailRank').textContent = '#' + rank + ' of ' + sectorStocks.length;
+            
+            detailPanel.classList.add('open');
+            overlay.classList.add('open');
+            
+            // Render sparkline
+            setTimeout(() => renderSparkline(stock), 100);
+        }
+        
+        // Search functionality
+        const searchInput = document.getElementById('stockSearch');
+        const searchDropdown = document.getElementById('searchDropdown');
+        let highlightedStock = null;
+        
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            if (query.length === 0) {
+                searchDropdown.classList.remove('active');
+                highlightedStock = null;
+                renderChart();
                 return;
             }
-
-            grid.style.display = 'grid';
-            noResults.style.display = 'none';
-
-            grid.innerHTML = filtered.map(blog => {
-                const fav = isFavorited(blog.name);
-                return `
-                <article class="blog-card ${fav ? 'favorited' : ''}" data-category="${blog.category}">
-                    <div class="blog-header">
-                        <div class="blog-title-row">
-                            <button class="favorite-btn ${fav ? 'active' : ''}" onclick="toggleFavorite('${blog.name.replace(/'/g, "\\'")}')" title="${fav ? 'Remove from favorites' : 'Add to favorites'}"></button>
-                            <a href="https://${blog.url}" target="_blank" class="blog-name">${blog.name}</a>
+            
+            const matches = stockData.filter(stock => 
+                stock.symbol.toLowerCase().includes(query) ||
+                stock.name.toLowerCase().includes(query)
+            ).slice(0, 8);
+            
+            if (matches.length > 0) {
+                searchDropdown.innerHTML = matches.map(stock => {
+                    const change = getChange(stock, currentPeriod);
+                    const changeClass = change >= 0 ? 'positive' : 'negative';
+                    const changeSign = change >= 0 ? '+' : '';
+                    return `
+                        <div class="search-item" data-symbol="${stock.symbol}">
+                            <div>
+                                <div class="search-item-symbol">${stock.symbol}</div>
+                                <div class="search-item-name">${stock.name}</div>
+                            </div>
+                            <div class="search-item-change ${changeClass}">${changeSign}${change.toFixed(1)}%</div>
                         </div>
-                        <span class="blog-category">${blog.category}</span>
-                    </div>
-                    <div class="blog-url">${blog.url}</div>
-                    <p class="blog-description">${blog.description}</p>
-                    <div class="blog-actions">
-                        <a href="https://${blog.url}" target="_blank" class="btn-small btn-primary">Visit Site →</a>
-                        ${blog.rss ? `<button class="btn-small" onclick="copyRSS('${blog.rss}')">📋 Copy RSS</button>` : ''}
-                    </div>
-                </article>
-            `}).join('');
-        }
-
-        function copyRSS(url) {
-            navigator.clipboard.writeText(url).then(() => showToast('RSS URL copied!'));
-        }
-
-        function showRandomBlog() {
-            currentRandomBlog = blogs[Math.floor(Math.random() * blogs.length)];
-            const isFav = isFavorited(currentRandomBlog.name);
-            document.getElementById('randomBlogName').textContent = currentRandomBlog.name;
-            document.getElementById('randomBlogDesc').textContent = currentRandomBlog.description;
-            document.getElementById('randomBlogLink').href = 'https://' + currentRandomBlog.url;
-            document.getElementById('randomBlogFav').textContent = isFav ? '⭐ Favorited' : '☆ Favorite';
-            document.getElementById('randomBlogFav').onclick = () => {
-                const nowFav = toggleFavorite(currentRandomBlog.name);
-                document.getElementById('randomBlogFav').textContent = nowFav ? '⭐ Favorited' : '☆ Favorite';
-            };
-            document.getElementById('randomModal').classList.add('show');
-        }
-
-        function exportOPML() {
-            const blogsToExport = favorites.length > 0 ? 
-                blogs.filter(b => b.rss && favorites.includes(b.name)) : 
-                blogs.filter(b => b.rss);
-            const opml = `<?xml version="1.0" encoding="UTF-8"?>
-<opml version="2.0">
-<head><title>Hacker News Blog Navigator${favorites.length > 0 ? ' - Favorites' : ''}</title><dateCreated>${new Date().toUTCString()}</dateCreated></head>
-<body>
-${blogsToExport.map(b => `  <outline type="rss" text="${b.name}" title="${b.name}" xmlUrl="${b.rss}" htmlUrl="https://${b.url}"/>`).join('\n')}
-</body>
-</opml>`;
-            const blob = new Blob([opml], { type: 'text/xml' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = favorites.length > 0 ? 'hn-blogs-favorites.opml' : 'hn-blog-navigator.opml';
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast(favorites.length > 0 ? 'Favorites exported!' : 'OPML exported!');
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const current = html.getAttribute('data-theme');
-            const next = current === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', next);
-            document.getElementById('themeToggle').textContent = next === 'light' ? '☀️' : '🌙';
-            localStorage.setItem('theme', next);
-        }
-
-        function showHelp() {
-            showToast('Shortcuts: ? = Help, R = Random, / = Search, F = Filter, Esc = Close');
-        }
-
-        // Event listeners
-        document.getElementById('searchInput').addEventListener('input', (e) => { currentSearch = e.target.value; renderBlogs(); });
-        document.getElementById('categoryFilter').addEventListener('change', (e) => { currentFilter = e.target.value; renderBlogs(); });
-        document.getElementById('sortBy').addEventListener('change', (e) => { currentSort = e.target.value; renderBlogs(); });
-        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-        document.getElementById('randomBtn').addEventListener('click', showRandomBlog);
-        document.getElementById('exportBtn').addEventListener('click', exportOPML);
-        document.getElementById('resetBtn').addEventListener('click', () => {
-            currentFilter = 'all';
-            currentSearch = '';
-            currentSort = 'name';
-            document.getElementById('searchInput').value = '';
-            document.getElementById('categoryFilter').value = 'all';
-            document.getElementById('sortBy').value = 'name';
-            renderBlogs();
-            showToast('Filters reset!');
+                    `;
+                }).join('');
+                searchDropdown.classList.add('active');
+                
+                // Add click handlers
+                searchDropdown.querySelectorAll('.search-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const symbol = this.dataset.symbol;
+                        const stock = stockData.find(s => s.symbol === symbol);
+                        if (stock) {
+                            // Switch to the stock's sector
+                            if (currentSector !== 'all' && currentSector !== stock.sector) {
+                                currentSector = stock.sector;
+                                document.getElementById('sectorFilter').value = stock.sector;
+                            }
+                            highlightedStock = symbol;
+                            renderChart();
+                            searchDropdown.classList.remove('active');
+                            searchInput.value = '';
+                            
+                            // Show detail after a short delay for render
+                            setTimeout(() => {
+                                showDetail(stock);
+                            }, 100);
+                        }
+                    });
+                });
+            } else {
+                searchDropdown.innerHTML = '<div class="search-item"><div class="search-item-name">No matches found</div></div>';
+                searchDropdown.classList.add('active');
+            }
         });
-        document.getElementById('closeModal').addEventListener('click', () => document.getElementById('randomModal').classList.remove('show'));
-        document.getElementById('anotherRandom').addEventListener('click', showRandomBlog);
-        document.getElementById('randomBlogRSS').addEventListener('click', () => currentRandomBlog?.rss && copyRSS(currentRandomBlog.rss));
-        document.getElementById('randomModal').addEventListener('click', (e) => { if (e.target.id === 'randomModal') document.getElementById('randomModal').classList.remove('show'); });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === '?' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); showHelp(); }
-            if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); showRandomBlog(); }
-            if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); document.getElementById('searchInput').focus(); }
-            if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && document.activeElement.tagName !== 'INPUT') { 
-                e.preventDefault(); 
-                const filter = document.getElementById('categoryFilter');
-                filter.focus();
-                filter.click();
+        
+        // Close search on click outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-box')) {
+                searchDropdown.classList.remove('active');
             }
-            if (e.key === 'Escape') { 
-                document.getElementById('randomModal').classList.remove('show'); 
-                document.getElementById('searchInput').blur(); 
-            }
-            if (e.key === '0' && !e.metaKey && !e.ctrlKey) {
+        });
+        
+        // Keyboard shortcut for search
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.activeElement !== searchInput) {
                 e.preventDefault();
-                document.getElementById('resetBtn').click();
+                searchInput.focus();
+            }
+            if (e.key === 'Escape') {
+                searchDropdown.classList.remove('active');
+                searchInput.blur();
+                highlightedStock = null;
+                renderChart();
             }
         });
-
-        // Init
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '☀️' : '🌙';
-        saveFavorites();
-        renderBlogs();
+        
+        // Event listeners
+        document.getElementById('sectorFilter').addEventListener('change', function() {
+            currentSector = this.value;
+            highlightedStock = null;
+            
+            // Smooth transition
+            const chart = document.querySelector('#chart svg');
+            if (chart) {
+                chart.style.opacity = '0';
+                chart.style.transition = 'opacity 0.2s ease-out';
+                setTimeout(() => {
+                    renderChart();
+                }, 200);
+            } else {
+                renderChart();
+            }
+        });
+        
+        document.getElementById('sortFilter').addEventListener('change', function() {
+            currentSort = this.value;
+            renderChart();
+        });
+        
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentPeriod = this.dataset.period;
+                
+                // Smooth transition: fade out, then render with fade in
+                const chart = document.querySelector('#chart svg');
+                if (chart) {
+                    chart.style.opacity = '0';
+                    chart.style.transition = 'opacity 0.2s ease-out';
+                    setTimeout(() => {
+                        renderChart();
+                    }, 200);
+                } else {
+                    renderChart();
+                }
+            });
+        });
+        
+        document.getElementById('closePanel').addEventListener('click', function() {
+            detailPanel.classList.remove('open');
+            overlay.classList.remove('open');
+        });
+        
+        overlay.addEventListener('click', function() {
+            detailPanel.classList.remove('open');
+            overlay.classList.remove('open');
+        });
+        
+        window.addEventListener('resize', renderChart);
+        
+        // Initial render
+        renderChart();
+        
+        // Set timestamp
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            timeZoneName: 'short'
+        });
     </script>
 </body>
 </html>

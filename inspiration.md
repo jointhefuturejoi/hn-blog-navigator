@@ -1,29 +1,20 @@
 # Inspiration
 
-## Source Tweet
-**Author:** Andrej Karpathy (@karpathy)  
-**URL:** https://x.com/karpathy/status/2018043254986703167  
-**Posted:** February 1, 2026  
+This project was inspired by a tweet from Jeff Sun (@jfsrev):
 
-## Content
-> "Finding myself going back to RSS/Atom feeds a lot more recently. There's a lot more higher quality longform and a lot less slop intended to provoke."
+**Tweet:** https://x.com/jfsrev/status/1789602959782977668
 
-## Why This Resonated
-Karpathy's observation strikes a chord with many technical readers who are tired of:
-- Algorithm-driven content that prioritizes engagement over quality
-- Clickbait and provocative headlines
-- Short-form content that lacks depth
-- Platform lock-in and content silos
+**Content:** "I've just build a quick screen called 'Hottest Stock' off @tradingview v2 tailored for individuals seeking stocks akin to $POET chart. This scan sifts through stocks that have exhibited significant momentum over the past month of trading, while also consolidating within a defined..."
 
-## The Opportunity
-Create a tool that makes it easier to:
-1. Discover high-quality RSS feeds
-2. Organize and categorize them
-3. Quickly subscribe to them in your favorite reader
+**Stats:** 958,758 views | 470 likes | 85 reposts | 1,014 bookmarks
 
-## Source Quality Verification
-- **Views:** 215,735
-- **Account:** @karpathy (1.7M followers, verified)
-- **Account Age:** Joined April 2009
-- **Engagement:** 3,635 likes, 2,823 bookmarks
-- **Assessment:** High-quality, authentic technical voice
+**Why this resonated:**
+The tweet got nearly 1M views because traders are constantly looking for momentum. The concept of visualizing stocks by momentum in a screener format is highly valuable. I adapted this into a treemap heatmap format which provides an at-a-glance view of the entire market's momentum distribution.
+
+**What I built:**
+Rather than just a list-based screener, I created a visual treemap where:
+- Box size = Market cap (bigger companies = bigger boxes)
+- Color = Momentum (green = positive, red = negative)
+- Interactivity = Click for detailed metrics and 30-day trend
+
+This makes it easy to spot: sector trends, outliers, and overall market sentiment in seconds.
